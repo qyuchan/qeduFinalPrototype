@@ -1,0 +1,76 @@
+services:
+  - type: web
+    name: almslarsa-backend
+    env: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    healthCheckPath: /up
+    envVars:
+      - key: APP_NAME
+        value: QEDU
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_KEY
+        sync: false          # paste output of: php artisan key:generate --show
+      - key: APP_URL
+        sync: false          # this service's own Render URL, fill in after first deploy
+      - key: LOG_CHANNEL
+        value: stack
+      - key: LOG_LEVEL
+        value: error
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        sync: false          # Supabase host, e.g. db.xxxx.supabase.co
+      - key: DB_PORT
+        value: "5432"
+      - key: DB_DATABASE
+        value: postgres
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_SSLMODE
+        value: require
+      - key: SESSION_DRIVER
+        value: database
+      - key: CACHE_STORE
+        value: database
+      - key: QUEUE_CONNECTION
+        value: sync           # no separate worker process needed — job runs inline
+      - key: FILESYSTEM_DISK
+        value: public
+      - key: RS_SERVICE_URL
+        sync: false          # fill in with the recommendation service's Render URL below
+      - key: AWS_ACCESS_KEY_ID
+        sync: false          # Supabase Storage S3 Connection: Access Key ID
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false          # Supabase Storage S3 Connection: Secret Access Key
+      - key: AWS_DEFAULT_REGION
+        sync: false          # Supabase Storage S3 Connection: Region
+      - key: AWS_BUCKET
+        sync: false          # the Supabase Storage bucket name you create, e.g. "public"
+      - key: AWS_ENDPOINT
+        sync: false          # https://<project-ref>.supabase.co/storage/v1/s3
+      - key: AWS_URL
+        sync: false          # https://<project-ref>.supabase.co/storage/v1/object/public/<bucket-name>
+      - key: AWS_USE_PATH_STYLE_ENDPOINT
+        value: "true"
+
+  - type: web
+    name: almslarsa-recommendation
+    env: python
+    rootDir: recommendation-service
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        sync: false          # same Supabase Postgres, in postgres:// URL form
+      - key: MIN_INTERACTIONS
+        value: "5"
+      - key: TOP_N
+        value: "5"
