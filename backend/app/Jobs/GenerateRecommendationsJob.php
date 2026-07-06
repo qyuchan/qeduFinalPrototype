@@ -60,8 +60,10 @@ class GenerateRecommendationsJob implements ShouldQueue
                 'status'  => $response->status(),
                 'body'    => $response->body(),
             ]);
-            $this->fail(new \RuntimeException("RS service returned {$response->status()}"));
-            return;
+            // Throwing (instead of $this->fail()) lets the queue worker actually retry
+            // this job per $tries/$backoff above — needed because the recommendation
+            // service can be mid-cold-start on the first attempt.
+            throw new \RuntimeException("RS service returned {$response->status()}");
         }
 
         $recs = $response->json('recommendations', []);

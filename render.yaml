@@ -40,7 +40,9 @@ services:
       - key: CACHE_STORE
         value: database
       - key: QUEUE_CONNECTION
-        value: sync           # no separate worker process needed — job runs inline
+        value: database        # processed by a queue:work worker started in docker-entrypoint.sh,
+                                # so a slow/cold recommendation service can no longer block or
+                                # break the quiz-submit request itself
       - key: FILESYSTEM_DISK
         value: public
       - key: RS_SERVICE_URL
