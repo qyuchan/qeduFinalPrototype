@@ -657,7 +657,6 @@ class LecturerController extends Controller
         ]);
 
         $resource = $material->load('topic')->toArray();
-        $resource['file_url'] = $filePath ? asset('storage/' . $filePath) : null;
 
         return response()->json($resource, 201);
     }
