@@ -54,9 +54,17 @@ class MaterialController extends Controller
         ];
         $delta = $weights[$validated['interaction_type']] ?? 1.0;
 
-        DB::table('user_item_matrix')->updateOrInsert(
-            ['student_id' => $request->user()->user_id, 'material_id' => $id],
-            ['implicit_score' => DB::raw("implicit_score + {$delta}"), 'updated_at' => now()]
+        // updateOrInsert() won't work here: its INSERT branch would try to reference
+        // implicit_score's "current value" before any row exists, which Postgres
+        // rejects. A real upsert keeps the increment for existing rows and just
+        // seeds $delta as the starting value for a brand new (student, material) pair.
+        DB::statement(
+            'INSERT INTO user_item_matrix (student_id, material_id, implicit_score, updated_at)
+             VALUES (?, ?, ?, ?)
+             ON CONFLICT (student_id, material_id)
+             DO UPDATE SET implicit_score = user_item_matrix.implicit_score + EXCLUDED.implicit_score,
+                            updated_at    = EXCLUDED.updated_at',
+            [$request->user()->user_id, $id, $delta, now()]
         );
 
         return response()->json(['status' => 'logged']);
