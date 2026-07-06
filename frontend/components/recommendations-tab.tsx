@@ -295,7 +295,11 @@ function RemediationCard({ rem, onDismiss, onOpen }: {
 
 // ── Main tab ──────────────────────────────────────────────────────────────────
 
-export function RecommendationsTab() {
+interface RecommendationsTabProps {
+  onNavigateToSubtopic?: (subtopicId: string) => void
+}
+
+export function RecommendationsTab({ onNavigateToSubtopic }: RecommendationsTabProps) {
   const [recs,                setRecs]                = useState<RecommendationRecord[]>([])
   const [remediations,        setRemediations]        = useState<LecturerRemediation[]>([])
   const [reviews,             setReviews]             = useState<LecturerReview[]>([])
@@ -439,7 +443,10 @@ export function RecommendationsTab() {
                   <AlgoRecCard
                     key={rec.recommendation_id}
                     rec={rec}
-                    onAccept={() => handleAccept(rec.recommendation_id)}
+                    onAccept={() => {
+                      handleAccept(rec.recommendation_id)
+                      if (rec.subtopic_id) onNavigateToSubtopic?.(rec.subtopic_id)
+                    }}
                     onDismiss={() => handleDismiss(rec.recommendation_id)}
                     onView={() => handleView(rec.material_id)}
                   />

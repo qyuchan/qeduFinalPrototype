@@ -50,6 +50,16 @@ export default function StudentDashboard() {
 
   if (loading || !user) return null
 
+  const navigateToSubtopic = (subtopicId: string) => {
+    const keyword = subtopicId.startsWith("1") ? "matri"
+                  : subtopicId.startsWith("2") ? "linear"
+                  : "determinant"
+    const topic = topics.find(t => t.topic_name.toLowerCase().includes(keyword))
+    setSelectedTopicId(topic?.topic_id ?? null)
+    setInitialSubtopicId(subtopicId)
+    setActiveTab("courses")
+  }
+
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
       <DashboardHeader />
@@ -73,15 +83,7 @@ export default function StudentDashboard() {
               </div>
               <aside className="w-full xl:w-80 flex-shrink-0">
                 <RecommendationsSidebar
-                  onNavigateToSubtopic={(subtopicId) => {
-                    const keyword = subtopicId.startsWith("1") ? "matri"
-                                  : subtopicId.startsWith("2") ? "linear"
-                                  : "determinant"
-                    const topic = topics.find(t => t.topic_name.toLowerCase().includes(keyword))
-                    setSelectedTopicId(topic?.topic_id ?? null)
-                    setInitialSubtopicId(subtopicId)
-                    setActiveTab("courses")
-                  }}
+                  onNavigateToSubtopic={navigateToSubtopic}
                 />
               </aside>
             </div>
@@ -104,7 +106,7 @@ export default function StudentDashboard() {
           )}
 
           {activeTab === "recommendations" && (
-            <RecommendationsTab />
+            <RecommendationsTab onNavigateToSubtopic={navigateToSubtopic} />
           )}
 
         </main>
