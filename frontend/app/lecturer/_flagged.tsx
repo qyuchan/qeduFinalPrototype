@@ -71,10 +71,12 @@ function QuestionRow({
   question,
   onAdded,
   onDeleted,
+  onDismissed,
 }: {
-  question:  FlaggedQuestion
-  onAdded:   (questionId: number, rem: Remediation) => void
-  onDeleted: (questionId: number, remediationId: number) => void
+  question:    FlaggedQuestion
+  onAdded:     (questionId: number, rem: Remediation) => void
+  onDeleted:   (questionId: number, remediationId: number) => void
+  onDismissed: (questionId: number) => void
 }) {
   const [expanded,    setExpanded]    = useState(false)
   const [mode,        setMode]        = useState<AddMode>('explanation')
@@ -82,9 +84,20 @@ function QuestionRow({
   const [pdfFile,     setPdfFile]     = useState<File | null>(null)
   const [pdfTitle,    setPdfTitle]    = useState('')
   const [saving,      setSaving]      = useState(false)
+  const [dismissing,  setDismissing]  = useState(false)
   const [error,       setError]       = useState<string | null>(null)
   const [symTab,      setSymTab]      = useState('math')
   const explainRef = useRef<HTMLTextAreaElement>(null)
+
+  const handleDismiss = async () => {
+    setDismissing(true)
+    try {
+      await lecturerApi.dismissFlaggedQuestion(question.question_id)
+      onDismissed(question.question_id)
+    } catch {
+      setDismissing(false)
+    }
+  }
 
   const insertSymbol = useCallback((sym: Sym) => {
     const ta = explainRef.current
@@ -159,15 +172,25 @@ function QuestionRow({
             </div>
             <p className="text-sm font-semibold text-foreground leading-relaxed"><MathText text={question.question_text} /></p>
           </div>
-          <Button
-            variant="outline" size="sm"
-            className="flex-shrink-0 gap-1"
-            onClick={() => { setExpanded(!expanded); setError(null) }}
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Add
-            {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-          </Button>
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <Button
+              variant="outline" size="sm"
+              onClick={() => { setExpanded(!expanded); setError(null) }}
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Add
+              {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            </Button>
+            <Button
+              variant="ghost" size="sm"
+              className="text-destructive hover:text-destructive h-8 w-8 p-0"
+              title="Dismiss from this list — reappears if a student answers it wrong again"
+              onClick={handleDismiss}
+              disabled={dismissing}
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
+          </div>
         </div>
 
         {/* Answer options */}
@@ -375,6 +398,9 @@ export function FlaggedQuestionsPanel() {
     ))
   }
 
+  const handleDismissed = (questionId: number) =>
+    setQuestions(prev => prev.filter(q => q.question_id !== questionId))
+
   if (loading) return (
     <div className="space-y-3 max-w-3xl mx-auto">
       <Skeleton className="h-8 w-64" />
@@ -406,6 +432,7 @@ export function FlaggedQuestionsPanel() {
               question={q}
               onAdded={handleAdded}
               onDeleted={handleDeleted}
+              onDismissed={handleDismissed}
             />
           ))}
         </div>

@@ -12,6 +12,7 @@ use App\Models\Quiz;
 use App\Models\Question;
 use App\Models\QuestionOption;
 use App\Models\QuestionRemediation;
+use App\Models\FlaggedQuestionDismissal;
 use App\Models\AttemptReview;
 use App\Models\QuizAttempt;
 use App\Models\StudentAnswer;
@@ -1003,11 +1004,21 @@ class LecturerController extends Controller
             ->join('questions as q',  'sa.question_id', '=', 'q.question_id')
             ->join('quizzes as qz',   'q.quiz_id',      '=', 'qz.quiz_id')
             ->join('users as u',      'qa.student_id',  '=', 'u.user_id')
+            ->leftJoin('flagged_question_dismissals as fqd', function ($join) use ($lecturerId) {
+                $join->on('fqd.question_id', '=', 'q.question_id')
+                     ->where('fqd.lecturer_id', '=', $lecturerId);
+            })
             ->whereIn('q.quiz_id', fn ($sub) =>
                 $sub->select('quiz_id')->from('quizzes')->where('created_by', $lecturerId)
             )
             ->where('sa.is_correct', false)
             ->where('u.role', 'student')
+            // A question a lecturer dismissed stays hidden until a *new* wrong
+            // answer (answered after the dismissal) brings it back.
+            ->where(function ($w) {
+                $w->whereNull('fqd.dismissed_at')
+                  ->orWhereColumn('sa.answered_at', '>', 'fqd.dismissed_at');
+            })
             ->groupBy('q.question_id', 'q.question_text', 'q.difficulty_level', 'q.topic_tag', 'q.quiz_id', 'qz.topic_id')
             ->select([
                 'q.question_id',
@@ -1044,6 +1055,22 @@ class LecturerController extends Controller
                 'remediations' => $remediations->get($q->question_id, collect())->values(),
             ])
         );
+    }
+
+    public function dismissFlaggedQuestion(Request $request, $questionId)
+    {
+        $this->ensureLecturer($request);
+
+        $question = Question::where('question_id', $questionId)
+            ->whereHas('quiz', fn ($q) => $q->where('created_by', $request->user()->user_id))
+            ->firstOrFail();
+
+        FlaggedQuestionDismissal::updateOrCreate(
+            ['lecturer_id' => $request->user()->user_id, 'question_id' => $question->question_id],
+            ['dismissed_at' => now()]
+        );
+
+        return response()->json(['message' => 'Dismissed.']);
     }
 
     public function storeRemediation(Request $request, $questionId)

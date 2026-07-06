@@ -112,8 +112,10 @@ function SidebarRemediationCard({ rem, onDismiss }: { rem: LecturerRemediation; 
             <span className="text-sm font-medium truncate">{rem.material.title}</span>
             <Badge variant="outline" className="text-xs flex-shrink-0">{rem.material.content_type}</Badge>
           </div>
-        ) : (
+        ) : rem.custom_explanation ? (
           <p className="text-sm text-foreground line-clamp-2 leading-snug">{rem.custom_explanation}</p>
+        ) : (
+          <p className="text-sm text-muted-foreground italic">The material attached to this review was removed.</p>
         )}
         <p className="text-xs text-primary">Tap to view full attempt →</p>
       </div>

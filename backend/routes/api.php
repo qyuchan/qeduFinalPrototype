@@ -99,6 +99,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Flagged questions & remediations
         Route::get('/flagged-questions',                         [LecturerController::class, 'flaggedQuestions']);
+        Route::post('/flagged-questions/{id}/dismiss',           [LecturerController::class, 'dismissFlaggedQuestion']);
         Route::post('/questions/{id}/remediations',              [LecturerController::class, 'storeRemediation']);
         Route::delete('/remediations/{id}',                      [LecturerController::class, 'destroyRemediation']);
     });

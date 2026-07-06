@@ -545,4 +545,9 @@ export const lecturerApi = {
     _flagged = null
     return result
   },
+  dismissFlaggedQuestion: async (questionId: number): Promise<{ message: string }> => {
+    const result = await api.post<{ message: string }>(`/lecturer/flagged-questions/${questionId}/dismiss`, {})
+    _flagged = null
+    return result
+  },
 }
