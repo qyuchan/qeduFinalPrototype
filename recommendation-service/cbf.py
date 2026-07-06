@@ -54,7 +54,7 @@ class ContentBasedFilter:
     async def _fetch_weak_tags(self, user_id: int, topic_id: int) -> list[str]:
         rows = await self.pool.fetch(
             """
-            SELECT DISTINCT q.topic_tag
+            SELECT q.topic_tag
             FROM student_answers sa
             JOIN questions      q  ON sa.question_id = q.question_id
             JOIN quiz_attempts  qa ON sa.attempt_id  = qa.attempt_id
@@ -63,7 +63,8 @@ class ContentBasedFilter:
               AND qz.topic_id    = $2
               AND sa.is_correct  = FALSE
               AND q.topic_tag IS NOT NULL
-            ORDER BY qa.submitted_at DESC
+            GROUP BY q.topic_tag
+            ORDER BY MAX(qa.submitted_at) DESC
             LIMIT 10
             """,
             user_id, topic_id,
