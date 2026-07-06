@@ -18,7 +18,7 @@ services:
       - key: APP_URL
         sync: false          # this service's own Render URL, fill in after first deploy
       - key: LOG_CHANNEL
-        value: stack
+        value: stderr
       - key: LOG_LEVEL
         value: error
       - key: DB_CONNECTION
