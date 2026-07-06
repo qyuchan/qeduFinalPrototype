@@ -16,6 +16,7 @@ RUN composer install --no-dev --no-scripts --no-autoloader --optimize-autoloader
 
 COPY . .
 RUN composer dump-autoload --optimize --no-dev \
+    && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
 COPY docker/nginx.conf.template /etc/nginx/nginx.conf.template
