@@ -203,9 +203,9 @@ function AlgoRecCard({ rec, onAccept, onDismiss, onView }: {
               <p className="text-xs text-muted-foreground mt-1">{rec.reason}</p>
             )}
           </div>
-          {mat?.external_url && (
+          {(mat?.external_url || mat?.file_url) && (
             <a
-              href={mat.external_url}
+              href={(mat!.external_url ?? mat!.file_url)!}
               target="_blank"
               rel="noopener noreferrer"
               className="flex-shrink-0 text-primary hover:text-primary/80 mt-1"

@@ -16,7 +16,7 @@ class RecommendationController extends Controller
     {
         $recs = Recommendation::where('user_id', $request->user()->user_id)
             ->where('is_dismissed', false)
-            ->with('material:material_id,title,content_type,external_url,duration_minutes,difficulty_level')
+            ->with('material:material_id,title,content_type,file_path,external_url,duration_minutes,difficulty_level')
             ->orderByDesc('confidence_score')
             ->limit(10)
             ->get();

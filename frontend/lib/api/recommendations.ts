@@ -16,6 +16,7 @@ export interface RecommendationRecord {
     title:            string
     content_type:     'pdf' | 'video' | 'article' | 'exercise' | 'example' | 'summary'
     external_url:     string | null
+    file_url:         string | null
     duration_minutes: number | null
     difficulty_level: string
   } | null

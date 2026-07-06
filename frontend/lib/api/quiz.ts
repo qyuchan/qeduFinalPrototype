@@ -46,6 +46,7 @@ export interface QuizResult {
       title:            string
       content_type:     string
       external_url:     string | null
+      file_url:         string | null
       duration_minutes: number | null
     } | null
   }[]

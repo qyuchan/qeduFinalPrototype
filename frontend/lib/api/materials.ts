@@ -7,6 +7,7 @@ export interface Material {
   content_type: 'pdf' | 'video' | 'article' | 'exercise' | 'example' | 'summary'
   difficulty_level: string
   external_url: string | null
+  file_url: string | null
   duration_minutes: number | null
   description: string | null
   view_count: number

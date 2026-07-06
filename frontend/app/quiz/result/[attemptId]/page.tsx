@@ -114,7 +114,7 @@ export default function QuizResultPage() {
                   matchPercentage={rec.confidence_score ? Math.round(rec.confidence_score * 100) : 0}
                   topic={rec.algorithm_used === 'cold_start' ? 'For You' : 'Recommended'}
                   duration={rec.material!.duration_minutes ? `${rec.material!.duration_minutes} min` : undefined}
-                  onAccept={() => handleAccept(rec.recommendation_id, rec.material!.external_url)}
+                  onAccept={() => handleAccept(rec.recommendation_id, rec.material!.external_url ?? rec.material!.file_url)}
                   onDismiss={() => handleDismiss(rec.recommendation_id)}
                 />
               ))}

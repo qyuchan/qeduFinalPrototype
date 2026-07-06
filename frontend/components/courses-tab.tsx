@@ -140,7 +140,8 @@ function StudyResources({ topic }: { topic: Topic }) {
 
   const openMaterial = (mat: Material) => {
     materialsApi.logView(mat.material_id).catch(() => {})
-    if (mat.external_url) window.open(mat.external_url, "_blank")
+    const url = mat.external_url ?? mat.file_url
+    if (url) window.open(url, "_blank")
   }
 
   return (
@@ -182,7 +183,7 @@ function StudyResources({ topic }: { topic: Topic }) {
                   </div>
                 </div>
               </div>
-              {mat.external_url && (
+              {(mat.external_url || mat.file_url) && (
                 <Button size="sm" variant="outline" className="flex-shrink-0 ml-3" onClick={() => openMaterial(mat)}>
                   <ExternalLink className="w-3 h-3 mr-1" /> Open
                 </Button>

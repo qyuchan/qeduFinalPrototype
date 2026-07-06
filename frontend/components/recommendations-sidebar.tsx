@@ -150,8 +150,9 @@ export function RecommendationsSidebar({ onNavigateToSubtopic }: Recommendations
 
   useEffect(() => { load() }, [load])
 
-  const handleAccept = async (id: number) => {
+  const handleAccept = async (id: number, url?: string | null) => {
     await recommendationsApi.accept(id)
+    if (url) window.open(url, '_blank', 'noopener,noreferrer')
     setRecs(prev => prev.filter(r => r.recommendation_id !== id))
   }
 
@@ -231,7 +232,7 @@ export function RecommendationsSidebar({ onNavigateToSubtopic }: Recommendations
                     matchPercentage={rec.confidence_score ? Math.round(rec.confidence_score * 100) : 0}
                     topic={algoLabel[rec.algorithm_used] ?? 'Recommended'}
                     duration={rec.material?.duration_minutes ? `${rec.material.duration_minutes} min` : undefined}
-                    onAccept={() => handleAccept(rec.recommendation_id)}
+                    onAccept={() => handleAccept(rec.recommendation_id, rec.material?.external_url ?? rec.material?.file_url)}
                     onDismiss={() => handleDismiss(rec.recommendation_id)}
                   />
                 ))}
