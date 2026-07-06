@@ -68,6 +68,10 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
+      - key: PYTHON_VERSION
+        value: "3.10.13"        # pydantic-core 2.23.4 has no prebuilt wheel for 3.14 yet,
+                                 # which forces a Rust/maturin source build that fails in
+                                 # Render's sandboxed build environment (read-only cargo cache)
       - key: DATABASE_URL
         sync: false          # same Supabase Postgres, in postgres:// URL form
       - key: MIN_INTERACTIONS
