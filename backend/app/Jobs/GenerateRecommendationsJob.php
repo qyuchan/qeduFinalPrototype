@@ -47,7 +47,12 @@ class GenerateRecommendationsJob implements ShouldQueue
 
         $rsUrl = config('services.recommendation_service.url');
 
-        $response = Http::timeout(15)->post("{$rsUrl}/recommend", [
+        // Render's free tier spins the RS service down after ~15 min idle; a cold
+        // boot alone measured ~42s. 15s was shorter than that, so the very first
+        // request after any quiet period would time out and burn all 3 retries
+        // without ever reaching a warm instance. This job already runs off the
+        // request path, so waiting it out here costs nothing user-facing.
+        $response = Http::timeout(90)->post("{$rsUrl}/recommend", [
             'user_id'            => $this->userId,
             'topic_id'           => $this->topicId,
             'trigger_attempt_id' => $this->attemptId,
