@@ -616,6 +616,9 @@ function TopicForm({
   // Subtopics
   const [drafts,          setDrafts]          = useState<SubtopicDraft[]>([])
   const [loadingSubs,     setLoadingSubs]     = useState(false)
+  const [hiddenSubs,      setHiddenSubs]      = useState<Subtopic[]>([])
+  const [showHiddenSubs,  setShowHiddenSubs]  = useState(false)
+  const [restoringSub,    setRestoringSub]    = useState<number | null>(null)
 
   // Form state
   const [saving, setSaving] = useState(false)
@@ -639,7 +642,30 @@ function TopicForm({
         showSlide:      !!s.slide_file_path,
       }))))
       .finally(() => setLoadingSubs(false))
+    lecturerApi.hiddenSubtopics(initial.topic_id).then(setHiddenSubs).catch(() => {})
   }, [initial?.topic_id])
+
+  const handleRestoreSubtopic = async (subtopicId: number) => {
+    if (!initial) return
+    setRestoringSub(subtopicId)
+    try {
+      const restored = await lecturerApi.restoreSubtopic(initial.topic_id, subtopicId)
+      setHiddenSubs(prev => prev.filter(s => s.topic_id !== subtopicId))
+      setDrafts(prev => [...prev, {
+        localId:         `db-${restored.topic_id}`,
+        topic_id:        restored.topic_id,
+        topic_name:      restored.topic_name,
+        description:     restored.description ?? '',
+        syllabus:        restored.syllabus ?? '',
+        slide_file_path: restored.slide_file_path ?? null,
+        pendingSlide:    null,
+        sequence_order:  restored.sequence_order,
+        showContent:     false,
+        showSlide:       false,
+      }])
+    } catch {}
+    finally { setRestoringSub(null) }
+  }
 
   const addSubtopic = () => {
     const nextSeq = drafts.length > 0 ? Math.max(...drafts.map(d => d.sequence_order)) + 1 : 1
@@ -876,6 +902,49 @@ function TopicForm({
             <Plus className="h-4 w-4" />
             Add Subtopic
           </button>
+
+          {/* Hidden subtopics */}
+          {hiddenSubs.length > 0 && (
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setShowHiddenSubs(v => !v)}
+                className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ChevronDown className={cn("h-4 w-4 transition-transform", showHiddenSubs && "rotate-180")} />
+                Hidden Subtopics ({hiddenSubs.length})
+              </button>
+
+              {showHiddenSubs && (
+                <div className="mt-3 space-y-2">
+                  {hiddenSubs.map(sub => (
+                    <div key={sub.topic_id} className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-border bg-muted/30 px-4 py-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-muted-foreground truncate">{sub.topic_name}</p>
+                        {sub.description && (
+                          <p className="text-xs text-muted-foreground/60 truncate">{sub.description}</p>
+                        )}
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="shrink-0 gap-1.5 text-xs h-7"
+                        onClick={() => handleRestoreSubtopic(sub.topic_id)}
+                        disabled={restoringSub === sub.topic_id}
+                      >
+                        {restoringSub === sub.topic_id
+                          ? <Loader2 className="h-3 w-3 animate-spin" />
+                          : <ArrowLeft className="h-3 w-3 rotate-180" />
+                        }
+                        Restore
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </form>
     </div>

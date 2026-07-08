@@ -389,6 +389,14 @@ export const lecturerApi = {
     _subtopics.delete(topicId)
     return result
   },
+  hiddenSubtopics: async (topicId: number): Promise<Subtopic[]> => {
+    return api.get<Subtopic[]>(`/lecturer/topics/${topicId}/subtopics/hidden`)
+  },
+  restoreSubtopic: async (topicId: number, subtopicId: number): Promise<Subtopic> => {
+    const result = await api.patch<Subtopic>(`/lecturer/topics/${topicId}/subtopics/${subtopicId}/restore`, {})
+    _subtopics.delete(topicId)
+    return result
+  },
   uploadSubtopicSlide: async (topicId: number, subtopicId: number, file: File): Promise<{ slide_file_path: string; slide_url: string }> => {
     const form = new FormData()
     form.append('slide', file)

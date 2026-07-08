@@ -57,8 +57,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/topics/{id}',                                   [LecturerController::class, 'destroyTopic']);
         Route::patch('/topics/{id}/restore',                            [LecturerController::class, 'restoreTopic']);
         Route::get('/topics/{id}/subtopics',                            [LecturerController::class, 'topicSubtopics']);
+        Route::get('/topics/{parentId}/subtopics/hidden',               [LecturerController::class, 'hiddenSubtopics']);
         Route::post('/topics/{parentId}/subtopics',                     [LecturerController::class, 'storeSubtopic']);
         Route::patch('/topics/{parentId}/subtopics/{id}',               [LecturerController::class, 'updateSubtopic']);
+        Route::patch('/topics/{parentId}/subtopics/{id}/restore',       [LecturerController::class, 'restoreSubtopic']);
         Route::delete('/topics/{parentId}/subtopics/{id}',              [LecturerController::class, 'destroySubtopic']);
         Route::post('/topics/{parentId}/subtopics/{id}/slide',          [LecturerController::class, 'uploadSubtopicSlide']);
         Route::delete('/topics/{parentId}/subtopics/{id}/slide',        [LecturerController::class, 'deleteSubtopicSlide']);

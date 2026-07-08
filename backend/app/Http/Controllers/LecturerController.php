@@ -173,6 +173,27 @@ class LecturerController extends Controller
         return response()->json(['message' => 'Subtopic hidden']);
     }
 
+    public function hiddenSubtopics(Request $request, int $parentId): JsonResponse
+    {
+        $this->ensureLecturer($request);
+        $subtopics = Topic::where('parent_topic_id', $parentId)
+            ->where('is_active', false)
+            ->orderBy('sequence_order')
+            ->get(['topic_id', 'topic_name', 'description', 'syllabus', 'slide_file_path', 'sequence_order']);
+        return response()->json($subtopics);
+    }
+
+    public function restoreSubtopic(Request $request, int $parentId, int $id): JsonResponse
+    {
+        $this->ensureLecturer($request);
+        $subtopic = Topic::where('parent_topic_id', $parentId)->where('is_active', false)->findOrFail($id);
+        $subtopic->update(['is_active' => true]);
+
+        return response()->json($subtopic->only([
+            'topic_id', 'topic_name', 'description', 'syllabus', 'slide_file_path', 'sequence_order',
+        ]));
+    }
+
     public function storeTopic(Request $request): JsonResponse
     {
         $this->ensureLecturer($request);
