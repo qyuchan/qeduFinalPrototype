@@ -371,6 +371,18 @@ class LecturerController extends Controller
             return response()->json(['message' => 'Student is already enrolled in this class.'], 409);
         }
 
+        // A student's mastery/quiz data should only be visible to the one lecturer
+        // actually teaching them — without this, any lecturer could claim a student
+        // already enrolled elsewhere and see their academic data.
+        $enrolledWithAnotherLecturer = ClassEnrollment::where('student_id', $student->user_id)
+            ->where('status', 'active')
+            ->whereHas('classRoom', fn ($q) => $q->where('lecturer_id', '!=', $request->user()->user_id))
+            ->exists();
+
+        if ($enrolledWithAnotherLecturer) {
+            return response()->json(['message' => 'This student is already enrolled in another lecturer\'s class.'], 409);
+        }
+
         $enrollment = ClassEnrollment::updateOrCreate(
             ['class_id' => $class->class_id, 'student_id' => $student->user_id],
             ['status'   => 'active']
