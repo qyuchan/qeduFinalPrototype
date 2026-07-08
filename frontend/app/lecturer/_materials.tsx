@@ -14,48 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Plus, Trash2, ExternalLink, Upload, FileText, ChevronDown, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-const TAG_GROUPS = [
-  { label: 'Topic', items: ['matrices', 'determinants', 'systems of linear equations'] },
-  { label: 'Content Nature', items: ['introduction', 'basics', 'summary', 'reference', 'formulas', 'practice', 'worked examples', 'drill', 'exercise', 'cheat sheet'] },
-]
-
-const KEYWORD_GROUPS = [
-  {
-    label: 'Matrices',
-    items: [
-      'matrix', 'rows', 'columns', 'elements', 'matrix dimensions', 'matrix equality', 'matrix types',
-      'square matrix', 'zero matrix', 'matrix addition', 'matrix subtraction', 'scalar multiplication',
-      'commutativity', 'distributive law', 'mixed operations', 'matrix multiplication', 'dot product',
-      'matrix power', 'matrix equations', 'non-commutative', 'transpose', 'symmetric', 'identity matrix',
-      'skew-symmetric', 'orthogonal matrix', 'diagonal matrix', 'triangular matrix', 'block matrix',
-      'permutation matrix', 'rotation matrix', 'transpose property', 'matrix inverse', 'invertibility',
-      'matrix rank', 'rank', 'similar matrices', 'trace', 'eigenvalues', 'characteristic polynomial',
-    ],
-  },
-  {
-    label: 'Determinants',
-    items: [
-      'determinant', 'cofactor', 'expansion', '2x2 determinant', '3x3 determinant', 'minors',
-      'cofactor matrix', 'sarrus rule', 'determinant properties', 'determinant laws', 'adjugate',
-      'adjoint', 'inverse determinant', 'inverse via adjugate', 'linearity', 'row proportionality',
-      'row swap', 'multiplicative property', 'triangular matrix determinant', 'diagonal matrix determinant',
-      'identity determinant', 'determinant calculation', 'determinant power', 'geometric interpretation',
-      'collinearity', 'coplanarity', 'singular matrix', 'singular condition',
-    ],
-  },
-  {
-    label: 'Systems of Linear Equations',
-    items: [
-      'linear system', 'consistent', 'inconsistent', 'unique solution', 'solution types', 'system types',
-      'system classification', 'simple systems', 'gaussian elimination', 'augmented matrix', 'row echelon',
-      'gauss-jordan', 'reduced row echelon form', 'RREF', 'back substitution', 'pivoting', 'pivot',
-      'elementary row operations', 'row operations', 'row reduction', "cramer's rule", 'inverse method',
-      'homogeneous system', 'free variables', 'parametric solution', 'general solution', 'infinite solutions',
-      'infinitely many solutions', 'underdetermined', 'null space', 'nullspace', 'underdetermined homogeneous',
-      'verification', 'system simplification', 'rank-nullity',
-    ],
-  },
-]
+const CONTENT_NATURE_TAGS = ['introduction', 'basics', 'summary', 'reference', 'formulas', 'practice', 'worked examples', 'drill', 'exercise', 'cheat sheet']
 
 function PillPicker({ label, hint, value, onChange, groups, searchable }: {
   label: string
@@ -65,13 +24,25 @@ function PillPicker({ label, hint, value, onChange, groups, searchable }: {
   groups: { label: string; items: string[] }[]
   searchable?: boolean
 }) {
-  const [search, setSearch] = useState('')
+  const [search,      setSearch]      = useState('')
+  const [customInput, setCustomInput] = useState('')
   const selected = new Set(value.split(',').map(s => s.trim()).filter(Boolean))
+  const knownItems = new Set(groups.flatMap(g => g.items))
+  const customSelected = [...selected].filter(item => !knownItems.has(item))
 
   const toggle = (item: string) => {
     const next = new Set(selected)
     if (next.has(item)) next.delete(item); else next.add(item)
     onChange([...next].join(', '))
+  }
+
+  const addCustom = () => {
+    const item = customInput.trim().toLowerCase()
+    if (!item) return
+    const next = new Set(selected)
+    next.add(item)
+    onChange([...next].join(', '))
+    setCustomInput('')
   }
 
   const shown = search
@@ -83,6 +54,37 @@ function PillPicker({ label, hint, value, onChange, groups, searchable }: {
       <Label>
         {label}{hint && <span className="text-muted-foreground font-normal text-xs ml-1">{hint}</span>}
       </Label>
+      <div className="flex gap-1.5">
+        <input
+          value={customInput}
+          onChange={e => setCustomInput(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustom() } }}
+          placeholder={`Add a custom ${label.toLowerCase().replace(/s$/, '')}...`}
+          className="flex-1 h-8 px-3 text-sm rounded-md border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+        />
+        <button
+          type="button"
+          onClick={addCustom}
+          className="h-8 px-3 rounded-md border border-input text-sm text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors"
+        >
+          Add
+        </button>
+      </div>
+      {customSelected.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {customSelected.map(item => (
+            <button
+              key={item}
+              type="button"
+              onClick={() => toggle(item)}
+              className="px-2 py-0.5 rounded-full text-xs border bg-primary text-primary-foreground border-primary"
+              title="Click to remove"
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+      )}
       {searchable && (
         <input
           value={search}
@@ -185,6 +187,12 @@ export function MaterialsPanel() {
   const [browseMaterials, setBrowseMaterials] = useState<Material[]>([])
   const [browseLoading,   setBrowseLoading]   = useState(false)
 
+  // Tag/keyword suggestions for the selected topic — grows from what's already
+  // tagged on other materials in that topic, so it works for any topic, not just
+  // a fixed hardcoded list.
+  const [suggestedTags,     setSuggestedTags]     = useState<string[]>([])
+  const [suggestedKeywords, setSuggestedKeywords] = useState<string[]>([])
+
   useEffect(() => {
     Promise.all([lecturerApi.materials(), lecturerApi.topics()])
       .then(([mats, tops]) => { setMaterials(mats); setTopics(tops) })
@@ -195,6 +203,13 @@ export function MaterialsPanel() {
   useEffect(() => {
     if (!form.topic_id) { setSubtopics([]); return }
     lecturerApi.topicSubtopics(Number(form.topic_id)).then(setSubtopics).catch(() => setSubtopics([]))
+  }, [form.topic_id])
+
+  useEffect(() => {
+    if (!form.topic_id) { setSuggestedTags([]); setSuggestedKeywords([]); return }
+    lecturerApi.topicTagSuggestions(Number(form.topic_id))
+      .then(s => { setSuggestedTags(s.tags); setSuggestedKeywords(s.keywords) })
+      .catch(() => { setSuggestedTags([]); setSuggestedKeywords([]) })
   }, [form.topic_id])
 
   useEffect(() => {
@@ -424,17 +439,29 @@ export function MaterialsPanel() {
                   label="Tags"
                   value={form.tags ?? ''}
                   onChange={setField('tags')}
-                  groups={TAG_GROUPS}
+                  groups={[
+                    { label: 'Topic', items: topics.map(t => t.topic_name.toLowerCase()) },
+                    { label: 'Content Nature', items: CONTENT_NATURE_TAGS },
+                    ...(suggestedTags.filter(t => !topics.some(top => top.topic_name.toLowerCase() === t) && !CONTENT_NATURE_TAGS.includes(t)).length > 0
+                      ? [{
+                          label: 'Previously Used',
+                          items: suggestedTags.filter(t => !topics.some(top => top.topic_name.toLowerCase() === t) && !CONTENT_NATURE_TAGS.includes(t)),
+                        }]
+                      : []),
+                  ]}
                 />
               </div>
 
               <div className="md:col-span-2 rounded-lg border border-border p-3">
                 <PillPicker
                   label="Keywords"
-                  hint="(please choose from the suggested keywords below)"
+                  hint="(suggestions grow from what's already tagged in this topic — or type your own)"
                   value={form.keywords ?? ''}
                   onChange={setField('keywords')}
-                  groups={KEYWORD_GROUPS}
+                  groups={suggestedKeywords.length > 0
+                    ? [{ label: topics.find(t => String(t.topic_id) === String(form.topic_id))?.topic_name ?? 'Suggested', items: suggestedKeywords }]
+                    : []
+                  }
                   searchable
                 />
               </div>

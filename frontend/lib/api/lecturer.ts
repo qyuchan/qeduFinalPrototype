@@ -510,6 +510,9 @@ export const lecturerApi = {
   allTopicMaterials: async (topicId: number): Promise<Material[]> => {
     return api.get<Material[]>(`/lecturer/topics/${topicId}/materials`)
   },
+  topicTagSuggestions: async (topicId: number): Promise<{ tags: string[]; keywords: string[] }> => {
+    return api.get<{ tags: string[]; keywords: string[] }>(`/lecturer/topics/${topicId}/tag-suggestions`)
+  },
 
   // Quizzes - 5-min cache, invalidated on any mutation
   quizzes: async (): Promise<Quiz[]> => {

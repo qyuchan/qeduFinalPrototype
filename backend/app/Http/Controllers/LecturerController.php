@@ -668,6 +668,34 @@ class LecturerController extends Controller
             ->get();
     }
 
+    // Tag/keyword suggestions for a topic, built from what other materials in that
+    // topic already used (tags/keywords are stored as comma-separated strings, not
+    // a normalised table). This grows on its own as materials get tagged, so it works
+    // for any topic — including ones with no hardcoded suggestion list at all.
+    public function topicTagSuggestions(Request $request, int $topicId): JsonResponse
+    {
+        $this->ensureLecturer($request);
+
+        $rows = LearningMaterial::where('topic_id', $topicId)
+            ->where('is_active', true)
+            ->get(['tags', 'keywords']);
+
+        $split = fn (string $field) => $rows
+            ->pluck($field)
+            ->filter()
+            ->flatMap(fn ($csv) => explode(',', $csv))
+            ->map(fn ($s) => trim($s))
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values();
+
+        return response()->json([
+            'tags'     => $split('tags'),
+            'keywords' => $split('keywords'),
+        ]);
+    }
+
     public function storeMaterial(Request $request)
     {
         $this->ensureLecturer($request);
