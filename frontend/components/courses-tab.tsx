@@ -20,10 +20,9 @@ import { cn } from "@/lib/utils"
 
 // ── Slide viewer ──────────────────────────────────────────────────────────────
 
-function SlideViewer({ path }: { path: string }) {
-  const url = `/storage/${path}`
-  const isPdf = path.toLowerCase().endsWith('.pdf')
-  const fileName = path.split('/').pop() ?? path
+function SlideViewer({ url }: { url: string }) {
+  const isPdf = url.toLowerCase().split('?')[0].endsWith('.pdf')
+  const fileName = decodeURIComponent(url.split('/').pop()?.split('?')[0] ?? url)
 
   if (isPdf) {
     return (
@@ -341,7 +340,7 @@ export function CoursesTab({ topics, loading, selectedTopicId, initialSubtopicId
           {dynSub.description && <p className="text-sm text-muted-foreground">{dynSub.description}</p>}
         </div>
 
-        {dynSub.slide_file_path && <SlideViewer path={dynSub.slide_file_path} />}
+        {dynSub.slide_url && <SlideViewer url={dynSub.slide_url} />}
 
         {dynSub.syllabus ? (
           <div className="rounded-xl border bg-card p-5 space-y-4">
@@ -582,7 +581,7 @@ export function CoursesTab({ topics, loading, selectedTopicId, initialSubtopicId
           </div>
         ) : (
           <>
-            {dbSub?.slide_file_path && <SlideViewer path={dbSub.slide_file_path} />}
+            {dbSub?.slide_url && <SlideViewer url={dbSub.slide_url} />}
             {dbSub?.syllabus ? (
               <div className="rounded-xl border bg-card p-5">
                 <RichContent text={dbSub.syllabus} />

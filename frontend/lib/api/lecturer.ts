@@ -113,6 +113,7 @@ export interface QuizQuestion {
   subtopic_id?: string | null
   explanation?: string
   image_path?: string | null
+  image_url?: string | null
   options: QuizOption[]
 }
 

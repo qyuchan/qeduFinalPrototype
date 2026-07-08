@@ -212,8 +212,8 @@ function QuestionEditorContent({
   const imageInputRef = useRef<HTMLInputElement>(null)
   const previewUrl   = q.image
     ? URL.createObjectURL(q.image)
-    : q.existing_image_path
-      ? `/storage/${q.existing_image_path}`
+    : q.existing_image_path  // already a full URL (Question::image_url), not a raw storage path
+      ? q.existing_image_path
       : null
 
   const insertSymbol = useCallback((sym: Sym) => {
@@ -576,7 +576,7 @@ export function QuizzesPanel() {
             is_correct:  !!o.is_correct,
           })),
           image:                null,
-          existing_image_path:  q.image_path ?? null,
+          existing_image_path:  q.image_url ?? null,
           remove_image:         false,
         })),
       })
@@ -709,7 +709,7 @@ export function QuizzesPanel() {
             <Badge variant="outline" className="text-primary border-primary/30">Q{qi + 1}</Badge>
             <QuestionPreview
               questionText={q.question_text}
-              imageUrl={q.image_path ? `/storage/${q.image_path}` : null}
+              imageUrl={q.image_url}
               options={q.options}
               explanation={q.explanation}
             />

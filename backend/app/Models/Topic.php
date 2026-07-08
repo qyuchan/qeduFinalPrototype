@@ -15,7 +15,14 @@ class Topic extends Model
         'slide_file_path', 'sequence_order', 'difficulty_level', 'estimated_hours', 'is_active',
     ];
 
-    protected $casts = ['is_active' => 'boolean'];
+    protected $casts   = ['is_active' => 'boolean'];
+    protected $appends = ['slide_url'];
+
+    public function getSlideUrlAttribute(): ?string
+    {
+        if (!$this->slide_file_path) return null;
+        return \Illuminate\Support\Facades\Storage::disk('public')->url($this->slide_file_path);
+    }
 
     public function children()
     {

@@ -139,7 +139,7 @@ class LecturerController extends Controller
 
         return response()->json([
             'slide_file_path' => $path,
-            'slide_url'       => '/storage/' . $path,
+            'slide_url'       => $subtopic->fresh()->slide_url,
         ]);
     }
 
@@ -887,7 +887,7 @@ class LecturerController extends Controller
         $path = $request->file('figure')->store("question-figures/{$questionId}", 'public');
         $question->update(['image_path' => $path]);
 
-        return response()->json(['image_path' => $path, 'image_url' => '/storage/' . $path]);
+        return response()->json(['image_path' => $path, 'image_url' => $question->fresh()->image_url]);
     }
 
     public function showQuiz(Request $request, $id)

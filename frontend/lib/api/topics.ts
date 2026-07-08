@@ -15,6 +15,7 @@ export interface Subtopic {
   description: string | null
   syllabus: string | null
   slide_file_path: string | null
+  slide_url: string | null
   sequence_order: number
 }
 
