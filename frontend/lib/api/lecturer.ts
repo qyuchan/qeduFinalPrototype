@@ -130,21 +130,17 @@ export interface UpdateQuizQuestion {
 
 export interface UpdateQuizPayload {
   topic_id: number
-  class_id?: number
   title: string
   description?: string
   passing_threshold: number
-  time_limit_minutes?: number
   questions: UpdateQuizQuestion[]
 }
 
 export interface CreateQuizPayload {
   topic_id: number
-  class_id?: number
   title: string
   description?: string
   passing_threshold: number
-  time_limit_minutes?: number
   questions: QuizQuestion[]
 }
 

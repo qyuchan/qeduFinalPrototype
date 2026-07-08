@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useRef, useCallback } from "react"
-import { lecturerApi, type Quiz, type QuizQuestion, type Topic, type Subtopic, type ClassRoom, type CreateQuizPayload, type UpdateQuizPayload } from "@/lib/api/lecturer"
+import { lecturerApi, type Quiz, type QuizQuestion, type Topic, type Subtopic, type CreateQuizPayload, type UpdateQuizPayload } from "@/lib/api/lecturer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -33,11 +33,9 @@ type NewQuestion = {
 }
 type NewQuiz = {
   topic_id:           string
-  class_id:           string
   title:              string
   description:        string
   passing_threshold:  number
-  time_limit_minutes: number
   questions:          NewQuestion[]
 }
 
@@ -49,8 +47,8 @@ const blankQuestion = (): NewQuestion => ({
   image: null, existing_image_path: null, remove_image: false,
 })
 const blankQuiz = (): NewQuiz => ({
-  topic_id: '', class_id: 'none', title: '', description: '',
-  passing_threshold: 60, time_limit_minutes: 30,
+  topic_id: '', title: '', description: '',
+  passing_threshold: 60,
   questions: [blankQuestion()],
 })
 
@@ -455,7 +453,6 @@ export function QuizzesPanel() {
   const { user } = useAuth()
   const [quizzes,     setQuizzes]     = useState<Quiz[]>([])
   const [topics,      setTopics]      = useState<Topic[]>([])
-  const [classes,     setClasses]     = useState<ClassRoom[]>([])
   const [tags,        setTags]        = useState<string[]>([])
   const [subtopics,   setSubtopics]   = useState<Subtopic[]>([])
   const [loading,     setLoading]     = useState(true)
@@ -474,10 +471,9 @@ export function QuizzesPanel() {
     Promise.all([
       lecturerApi.quizzes(),
       lecturerApi.topics(),
-      lecturerApi.classes(),
       lecturerApi.questionTags(),
     ])
-      .then(([qz, tops, cls, tgs]) => { setQuizzes(qz); setTopics(tops); setClasses(cls); setTags(tgs) })
+      .then(([qz, tops, tgs]) => { setQuizzes(qz); setTopics(tops); setTags(tgs) })
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
@@ -547,11 +543,9 @@ export function QuizzesPanel() {
       setHasAttempts(!!full.has_attempts)
       setForm({
         topic_id:           String(full.topic_id),
-        class_id:           full.class_id ? String(full.class_id) : 'none',
         title:              full.title,
         description:        full.description || '',
         passing_threshold:  full.passing_threshold,
-        time_limit_minutes: full.time_limit_minutes || 0,
         questions: (full.questions ?? []).map(q => ({
           question_id:          q.question_id,
           question_text:        q.question_text,
@@ -593,11 +587,9 @@ export function QuizzesPanel() {
     try {
       const basePayload = {
         topic_id:           Number(form.topic_id),
-        class_id:           (form.class_id && form.class_id !== 'none') ? Number(form.class_id) : undefined,
         title:              form.title,
         description:        form.description || undefined,
         passing_threshold:  form.passing_threshold,
-        time_limit_minutes: form.time_limit_minutes || undefined,
         questions: form.questions.map(q => ({
           question_id:      q.question_id,
           question_text:    q.question_text,
@@ -675,7 +667,6 @@ export function QuizzesPanel() {
               <Badge variant="outline" className="text-xs text-primary border-primary/30">{viewingQuiz.topic.topic_name}</Badge>
             )}
             <span className="text-xs text-muted-foreground">Pass: {viewingQuiz.passing_threshold}%</span>
-            {viewingQuiz.time_limit_minutes && <span className="text-xs text-muted-foreground">{viewingQuiz.time_limit_minutes} min</span>}
           </div>
           {viewingQuiz.creator && (
             <p className="text-xs text-muted-foreground mt-1">Created by {viewingQuiz.creator.full_name} ({viewingQuiz.creator.email})</p>
@@ -752,32 +743,11 @@ export function QuizzesPanel() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Assign to Class <span className="text-muted-foreground font-normal text-xs">(optional)</span></Label>
-              <Select value={form.class_id} onValueChange={v => setQuizField('class_id', v)}>
-                <SelectTrigger><SelectValue placeholder="All classes / unassigned" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">All classes / unassigned</SelectItem>
-                  {classes.map(c => (
-                    <SelectItem key={c.class_id} value={String(c.class_id)}>{c.class_name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
               <Label>Passing Threshold (%)</Label>
               <Input
                 type="number" min="0" max="100" required
                 value={form.passing_threshold}
                 onChange={e => setQuizField('passing_threshold', Number(e.target.value))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Time Limit (minutes, optional)</Label>
-              <Input
-                type="number" min="1"
-                value={form.time_limit_minutes || ''}
-                onChange={e => setQuizField('time_limit_minutes', e.target.value ? Number(e.target.value) : 0)}
-                placeholder="30"
               />
             </div>
           </CardContent>
@@ -915,7 +885,6 @@ export function QuizzesPanel() {
                       <span>{quiz.questions_count ?? 0} questions</span>
                       <span>{quiz.total_marks} marks</span>
                       <span>Pass: {quiz.passing_threshold}%</span>
-                      {quiz.time_limit_minutes && <span>{quiz.time_limit_minutes} min</span>}
                     </div>
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">

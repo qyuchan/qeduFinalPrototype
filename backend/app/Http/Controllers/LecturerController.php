@@ -800,11 +800,9 @@ class LecturerController extends Controller
         $this->ensureLecturer($request);
         $data = $request->validate([
             'topic_id'                          => 'required|integer|exists:topics,topic_id',
-            'class_id'                          => 'nullable|integer|exists:classes,class_id',
             'title'                             => 'required|string|max:200',
             'description'                       => 'nullable|string',
             'passing_threshold'                 => 'required|numeric|min:0|max:100',
-            'time_limit_minutes'                => 'nullable|integer|min:1',
             'questions'                         => 'required|array|min:1',
             'questions.*.question_text'         => 'required|string',
             'questions.*.marks'                 => 'required|integer|min:1',
@@ -817,22 +815,19 @@ class LecturerController extends Controller
             'questions.*.options.*.is_correct'  => 'required|boolean',
         ]);
 
-        if (!empty($data['class_id'])) {
-            $this->ownedClass($request, $data['class_id']);
-        }
-
         $totalMarks = collect($data['questions'])->sum('marks');
 
         // Summative/diagnostic/remedial quiz types were never actually reachable by
-        // students (QuizController::fetch only ever serves 'formative') — creation
+        // students (QuizController::fetch only ever serves 'formative'): creation
         // is locked to the one type that works instead of offering a dead choice.
+        // class_id and time_limit_minutes were dropped the same way: neither was ever
+        // read anywhere in the student-facing quiz flow, so they were pure dead weight.
         $setNumber = Quiz::where('topic_id', $data['topic_id'])
             ->where('quiz_type', 'formative')
             ->max('set_number') + 1 ?? 1;
 
         $quiz = Quiz::create([
             'topic_id'           => $data['topic_id'],
-            'class_id'           => $data['class_id'] ?? null,
             'created_by'         => $request->user()->user_id,
             'title'              => $data['title'],
             'description'        => $data['description'] ?? null,
@@ -840,7 +835,6 @@ class LecturerController extends Controller
             'set_number'         => $setNumber,
             'total_marks'        => $totalMarks,
             'passing_threshold'  => $data['passing_threshold'],
-            'time_limit_minutes' => $data['time_limit_minutes'] ?? null,
             'is_active'          => true,
         ]);
 
@@ -940,11 +934,9 @@ class LecturerController extends Controller
 
         $data = $request->validate([
             'topic_id'                          => 'required|integer|exists:topics,topic_id',
-            'class_id'                          => 'nullable|integer|exists:classes,class_id',
             'title'                             => 'required|string|max:200',
             'description'                       => 'nullable|string',
             'passing_threshold'                 => 'required|numeric|min:0|max:100',
-            'time_limit_minutes'                => 'nullable|integer|min:1',
             'questions'                         => 'required|array|min:1',
             'questions.*.question_id'           => 'nullable|integer',
             'questions.*.question_text'         => 'required|string',
@@ -963,11 +955,9 @@ class LecturerController extends Controller
 
         $quiz->update([
             'topic_id'           => $data['topic_id'],
-            'class_id'           => $data['class_id'] ?? null,
             'title'              => $data['title'],
             'description'        => $data['description'] ?? null,
             'passing_threshold'  => $data['passing_threshold'],
-            'time_limit_minutes' => $data['time_limit_minutes'] ?? null,
             'total_marks'        => $totalMarks,
         ]);
 
