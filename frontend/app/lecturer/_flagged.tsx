@@ -262,7 +262,7 @@ function QuestionRow({
                   <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-2">
                     <p className="text-xs text-destructive flex-1">
                       Remove this feedback permanently? This can&apos;t be undone.
-                      {rem.material && ' If the attached material isn&apos;t used anywhere else, it will be deleted too.'}
+                      {rem.material && " If the attached material isn't used anywhere else, it will be deleted too."}
                     </p>
                     <Button
                       size="sm" variant="destructive" className="h-6 text-xs px-2"
