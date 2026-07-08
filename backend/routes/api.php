@@ -37,7 +37,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Mastery
     Route::get('/mastery',                            [QuizController::class, 'masteryOverview']);
 
-    // Course (subtopic) completion — DB-backed progress
+    // Course (subtopic) completion: DB-backed progress
     Route::get('/subtopic-progress',                  [QuizController::class, 'getSubtopicProgress']);
     Route::post('/subtopic-progress',                 [QuizController::class, 'markSubtopicComplete']);
     Route::delete('/subtopic-progress/{subtopicId}',  [QuizController::class, 'markSubtopicIncomplete'])->where('subtopicId', '.+');

@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-// Force light theme on this page — must override both --var and --color-var because
+// Force light theme on this page: must override both --var and --color-var because
 // Tailwind v4 @theme inline resolves --color-* from :root, not from child elements.
 const lightVars: React.CSSProperties = {
   "--background":               "oklch(0.85 0.08 210)",

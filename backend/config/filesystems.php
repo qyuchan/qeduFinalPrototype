@@ -41,7 +41,7 @@ return [
         // Backed by Supabase Storage's S3-compatible endpoint instead of local disk, so
         // uploaded materials/slides/review files survive redeploys (Render's disk is
         // ephemeral). Every existing Storage::disk('public') call in the app is
-        // unaffected by this — only where the bytes actually live has changed.
+        // unaffected by this: only where the bytes actually live has changed.
         'public' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

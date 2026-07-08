@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Drop default Laravel tables — we replace them with our own schema
+        // Drop default Laravel tables: we replace them with our own schema
         Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('users');
 
@@ -38,7 +38,7 @@ return new class extends Migration
             $table->foreign('user_id')->references('user_id')->on('users')->cascadeOnDelete();
         });
 
-        // personal_access_tokens is created by Sanctum's own migration — skip if exists
+        // personal_access_tokens is created by Sanctum's own migration: skip if exists
         if (!Schema::hasTable('personal_access_tokens')) {
             Schema::create('personal_access_tokens', function (Blueprint $table) {
                 $table->id();

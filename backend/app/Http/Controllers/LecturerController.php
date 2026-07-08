@@ -393,7 +393,7 @@ class LecturerController extends Controller
         }
 
         // A student's mastery/quiz data should only be visible to the one lecturer
-        // actually teaching them — without this, any lecturer could claim a student
+        // actually teaching them: without this, any lecturer could claim a student
         // already enrolled elsewhere and see their academic data.
         $conflictingEnrollment = ClassEnrollment::where('student_id', $student->user_id)
             ->where('status', 'active')
@@ -656,7 +656,7 @@ class LecturerController extends Controller
 
     // Read-only: every active material in a topic, regardless of who uploaded it.
     // Materials are a shared pool across all lecturers (only management is scoped
-    // to your own uploads) — this lets a lecturer see what already exists before
+    // to your own uploads): this lets a lecturer see what already exists before
     // deciding whether to add their own, without granting edit/delete on it.
     public function allTopicMaterials(Request $request, int $topicId)
     {

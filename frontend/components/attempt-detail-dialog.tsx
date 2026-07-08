@@ -169,7 +169,7 @@ export function AttemptDetailDialog({ attemptId, questionId, open, onOpenChange 
               </div>
             </section>
 
-            {/* Lecturer remediations — grouped per question by topic_tag */}
+            {/* Lecturer remediations: grouped per question by topic_tag */}
             {(() => {
               const wrongAnswers = detail.student_answers.filter(
                 ans => !ans.is_correct &&

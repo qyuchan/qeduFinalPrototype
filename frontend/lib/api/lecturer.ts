@@ -486,7 +486,7 @@ export const lecturerApi = {
       fd.append('file', file)
       Object.entries(data).forEach(([k, v]) => {
         if (v === undefined || v === null || v === '') return
-        // Laravel's `boolean` validation rule only accepts true/false/0/1/'0'/'1' —
+        // Laravel's `boolean` validation rule only accepts true/false/0/1/'0'/'1':
         // not the string "true"/"false" that FormData would otherwise stringify to.
         fd.append(k, typeof v === 'boolean' ? (v ? '1' : '0') : String(v))
       })

@@ -513,7 +513,7 @@ export function MaterialsPanel() {
         </div>
       )}
 
-      {/* Browse all materials in a topic — read-only, includes other lecturers' uploads */}
+      {/* Browse all materials in a topic: read-only, includes other lecturers' uploads */}
       <div className="pt-4 border-t border-border">
         <button
           type="button"
@@ -527,7 +527,7 @@ export function MaterialsPanel() {
         {showBrowse && (
           <div className="mt-3 space-y-3">
             <p className="text-xs text-muted-foreground">
-              See every active material in a topic, uploaded by any lecturer — read-only. Editing or deleting is only available for materials you uploaded yourself, above.
+              See every active material in a topic, uploaded by any lecturer: read-only. Editing or deleting is only available for materials you uploaded yourself, above.
             </p>
             <Select value={browseTopicId} onValueChange={setBrowseTopicId}>
               <SelectTrigger className="max-w-xs"><SelectValue placeholder="Select a topic to browse" /></SelectTrigger>

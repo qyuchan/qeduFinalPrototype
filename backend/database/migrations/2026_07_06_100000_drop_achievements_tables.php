@@ -13,6 +13,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Achievements feature removed — no rollback
+        // Achievements feature removed: no rollback
     }
 };

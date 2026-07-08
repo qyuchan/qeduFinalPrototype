@@ -66,7 +66,7 @@ class GenerateRecommendationsJob implements ShouldQueue
                 'body'    => $response->body(),
             ]);
             // Throwing (instead of $this->fail()) lets the queue worker actually retry
-            // this job per $tries/$backoff above — needed because the recommendation
+            // this job per $tries/$backoff above: needed because the recommendation
             // service can be mid-cold-start on the first attempt.
             throw new \RuntimeException("RS service returned {$response->status()}");
         }

@@ -184,7 +184,7 @@ function QuestionRow({
             <Button
               variant="ghost" size="sm"
               className="text-destructive hover:text-destructive h-8 w-8 p-0"
-              title="Dismiss from this list — reappears if a student answers it wrong again"
+              title="Dismiss from this list: reappears if a student answers it wrong again"
               onClick={handleDismiss}
               disabled={dismissing}
             >
