@@ -87,6 +87,7 @@ function QuestionRow({
   const [dismissing,  setDismissing]  = useState(false)
   const [error,       setError]       = useState<string | null>(null)
   const [symTab,      setSymTab]      = useState('math')
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
   const explainRef = useRef<HTMLTextAreaElement>(null)
 
   const handleDismiss = async () => {
@@ -223,37 +224,60 @@ function QuestionRow({
         {question.remediations.length > 0 && (
           <div className="space-y-2 border-t border-border/40 pt-3">
             {question.remediations.map(rem => (
-              <div key={rem.remediation_id} className="flex items-start gap-2 p-2.5 rounded-lg bg-primary/5 border border-primary/15">
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-primary mb-0.5">By {rem.lecturer.full_name}</p>
-                  {rem.material ? (
-                    <div className="flex items-center gap-1.5 text-sm">
-                      <BookOpen className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-                      {(rem.material.file_url ?? rem.material.external_url) ? (
-                        <a
-                          href={(rem.material.file_url ?? rem.material.external_url)!}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="truncate text-primary hover:underline"
-                        >
-                          {rem.material.title}
-                        </a>
-                      ) : (
-                        <span className="truncate">{rem.material.title}</span>
-                      )}
-                      <Badge variant="outline" className="text-xs ml-1">{rem.material.content_type}</Badge>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground line-clamp-2">{rem.custom_explanation}</p>
-                  )}
+              <div key={rem.remediation_id} className="p-2.5 rounded-lg bg-primary/5 border border-primary/15 space-y-2">
+                <div className="flex items-start gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-primary mb-0.5">By {rem.lecturer.full_name}</p>
+                    {rem.material ? (
+                      <div className="flex items-center gap-1.5 text-sm">
+                        <BookOpen className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                        {(rem.material.file_url ?? rem.material.external_url) ? (
+                          <a
+                            href={(rem.material.file_url ?? rem.material.external_url)!}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="truncate text-primary hover:underline"
+                          >
+                            {rem.material.title}
+                          </a>
+                        ) : (
+                          <span className="truncate">{rem.material.title}</span>
+                        )}
+                        <Badge variant="outline" className="text-xs ml-1">{rem.material.content_type}</Badge>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground line-clamp-2">{rem.custom_explanation}</p>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost" size="sm"
+                    className="text-destructive hover:text-destructive h-7 w-7 p-0 flex-shrink-0"
+                    onClick={() => setConfirmDeleteId(id => id === rem.remediation_id ? null : rem.remediation_id)}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
                 </div>
-                <Button
-                  variant="ghost" size="sm"
-                  className="text-destructive hover:text-destructive h-7 w-7 p-0 flex-shrink-0"
-                  onClick={() => onDeleted(question.question_id, rem.remediation_id)}
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </Button>
+
+                {confirmDeleteId === rem.remediation_id && (
+                  <div className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-2">
+                    <p className="text-xs text-destructive flex-1">
+                      Remove this feedback permanently? This can&apos;t be undone.
+                      {rem.material && ' The attached material itself is not deleted.'}
+                    </p>
+                    <Button
+                      size="sm" variant="destructive" className="h-6 text-xs px-2"
+                      onClick={() => { setConfirmDeleteId(null); onDeleted(question.question_id, rem.remediation_id) }}
+                    >
+                      Remove
+                    </Button>
+                    <Button
+                      size="sm" variant="ghost" className="h-6 text-xs px-2"
+                      onClick={() => setConfirmDeleteId(null)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
