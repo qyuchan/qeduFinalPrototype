@@ -1193,10 +1193,38 @@ class LecturerController extends Controller
     public function destroyRemediation(Request $request, $id)
     {
         $this->ensureLecturer($request);
-        QuestionRemediation::where('remediation_id', $id)
+        $remediation = QuestionRemediation::where('remediation_id', $id)
             ->where('lecturer_id', $request->user()->user_id)
-            ->firstOrFail()
-            ->delete();
+            ->firstOrFail();
+
+        $materialId = $remediation->material_id;
+        $remediation->delete();
+
+        // The "upload" mode on this feature always creates a brand-new material
+        // dedicated to that one remediation (never a reference to a pre-existing
+        // shared one), so an accidental wrong upload should actually go away, not
+        // linger as a still-recommendable orphan. Recommendations and interaction
+        // logs deliberately do NOT block this: they're passive system/student
+        // byproducts of the mistake itself (a student's accidental click on a bad
+        // upload even feeds CF's similarity matrix via user_item_matrix), not a
+        // reason to preserve it — keeping "noise from a mistake" around only
+        // pollutes the RS further. The one thing that DOES block cleanup is another
+        // lecturer deliberately reusing this exact material on a different flagged
+        // question via its own remediation: that's a genuine, intentional decision,
+        // not incidental system activity.
+        if ($materialId) {
+            $stillReferenced = QuestionRemediation::where('material_id', $materialId)->exists();
+
+            if (!$stillReferenced) {
+                $material = LearningMaterial::find($materialId);
+                if ($material) {
+                    if ($material->file_path) {
+                        Storage::disk('public')->delete($material->file_path);
+                    }
+                    $material->delete();
+                }
+            }
+        }
 
         return response()->json(['message' => 'Deleted']);
     }
