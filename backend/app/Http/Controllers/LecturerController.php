@@ -654,6 +654,20 @@ class LecturerController extends Controller
             ->get();
     }
 
+    // Read-only: every active material in a topic, regardless of who uploaded it.
+    // Materials are a shared pool across all lecturers (only management is scoped
+    // to your own uploads) — this lets a lecturer see what already exists before
+    // deciding whether to add their own, without granting edit/delete on it.
+    public function allTopicMaterials(Request $request, int $topicId)
+    {
+        $this->ensureLecturer($request);
+        return LearningMaterial::with(['topic', 'uploader:user_id,full_name,email'])
+            ->where('topic_id', $topicId)
+            ->where('is_active', true)
+            ->orderByDesc('material_id')
+            ->get();
+    }
+
     public function storeMaterial(Request $request)
     {
         $this->ensureLecturer($request);

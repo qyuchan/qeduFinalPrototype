@@ -86,6 +86,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Materials
         Route::get('/materials',                                 [LecturerController::class, 'materials']);
+        Route::get('/topics/{topicId}/materials',                [LecturerController::class, 'allTopicMaterials']);
         Route::post('/materials',                                [LecturerController::class, 'storeMaterial']);
         Route::patch('/materials/{id}',                          [LecturerController::class, 'updateMaterial']);
         Route::delete('/materials/{id}',                         [LecturerController::class, 'destroyMaterial']);

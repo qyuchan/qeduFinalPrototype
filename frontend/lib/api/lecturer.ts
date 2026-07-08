@@ -81,6 +81,7 @@ export interface Material {
   is_remedial: boolean
   is_active: boolean
   view_count: number
+  uploader?: { user_id: number; full_name: string; email: string } | null
 }
 
 export interface CreateMaterialPayload {
@@ -505,6 +506,9 @@ export const lecturerApi = {
     const result = await api.delete<{ message: string }>(`/lecturer/materials/${id}`)
     _materials = null
     return result
+  },
+  allTopicMaterials: async (topicId: number): Promise<Material[]> => {
+    return api.get<Material[]>(`/lecturer/topics/${topicId}/materials`)
   },
 
   // Quizzes - 5-min cache, invalidated on any mutation

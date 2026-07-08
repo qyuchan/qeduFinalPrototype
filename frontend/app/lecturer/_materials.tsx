@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Plus, Trash2, ExternalLink, Upload, FileText } from "lucide-react"
+import { Plus, Trash2, ExternalLink, Upload, FileText, ChevronDown, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const TAG_GROUPS = [
@@ -179,6 +179,12 @@ export function MaterialsPanel() {
   const [saving,       setSaving]       = useState(false)
   const [error,        setError]        = useState<string | null>(null)
 
+  // Browse all materials in a topic (read-only, includes other lecturers' uploads)
+  const [showBrowse,      setShowBrowse]      = useState(false)
+  const [browseTopicId,   setBrowseTopicId]   = useState<string>('')
+  const [browseMaterials, setBrowseMaterials] = useState<Material[]>([])
+  const [browseLoading,   setBrowseLoading]   = useState(false)
+
   useEffect(() => {
     Promise.all([lecturerApi.materials(), lecturerApi.topics()])
       .then(([mats, tops]) => { setMaterials(mats); setTopics(tops) })
@@ -190,6 +196,15 @@ export function MaterialsPanel() {
     if (!form.topic_id) { setSubtopics([]); return }
     lecturerApi.topicSubtopics(Number(form.topic_id)).then(setSubtopics).catch(() => setSubtopics([]))
   }, [form.topic_id])
+
+  useEffect(() => {
+    if (!browseTopicId) { setBrowseMaterials([]); return }
+    setBrowseLoading(true)
+    lecturerApi.allTopicMaterials(Number(browseTopicId))
+      .then(setBrowseMaterials)
+      .catch(() => setBrowseMaterials([]))
+      .finally(() => setBrowseLoading(false))
+  }, [browseTopicId])
 
   const setField = (field: keyof CreateMaterialPayload) => (val: any) =>
     setForm(f => ({ ...f, [field]: val }))
@@ -497,6 +512,79 @@ export function MaterialsPanel() {
           ))}
         </div>
       )}
+
+      {/* Browse all materials in a topic — read-only, includes other lecturers' uploads */}
+      <div className="pt-4 border-t border-border">
+        <button
+          type="button"
+          onClick={() => setShowBrowse(v => !v)}
+          className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ChevronDown className={cn("h-4 w-4 transition-transform", showBrowse && "rotate-180")} />
+          Browse All Materials by Topic
+        </button>
+
+        {showBrowse && (
+          <div className="mt-3 space-y-3">
+            <p className="text-xs text-muted-foreground">
+              See every active material in a topic, uploaded by any lecturer — read-only. Editing or deleting is only available for materials you uploaded yourself, above.
+            </p>
+            <Select value={browseTopicId} onValueChange={setBrowseTopicId}>
+              <SelectTrigger className="max-w-xs"><SelectValue placeholder="Select a topic to browse" /></SelectTrigger>
+              <SelectContent>
+                {topics.map(t => (
+                  <SelectItem key={t.topic_id} value={String(t.topic_id)}>{t.topic_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {browseLoading ? (
+              <div className="space-y-2">
+                {[1, 2].map(i => <Skeleton key={i} className="h-16 w-full" />)}
+              </div>
+            ) : browseTopicId && browseMaterials.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">No materials in this topic yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {browseMaterials.map(mat => (
+                  <Card key={mat.material_id} className="bg-muted/30">
+                    <CardContent className="pt-3 pb-3">
+                      <div className="flex items-start gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <span className="font-medium text-foreground">{mat.title}</span>
+                            <Badge variant="outline" className={typeColor[mat.content_type] ?? ''}>
+                              {mat.content_type}
+                            </Badge>
+                            <Badge variant="outline" className="text-xs capitalize text-muted-foreground">
+                              {mat.difficulty_level}
+                            </Badge>
+                          </div>
+                          {mat.description && (
+                            <p className="text-sm text-muted-foreground line-clamp-1">{mat.description}</p>
+                          )}
+                          {mat.uploader && (
+                            <p className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                              <Users className="w-3 h-3" /> Uploaded by {mat.uploader.full_name} ({mat.uploader.email})
+                            </p>
+                          )}
+                        </div>
+                        {(mat.file_url || mat.external_url) && (
+                          <Button variant="ghost" size="sm" asChild>
+                            <a href={mat.file_url ?? mat.external_url!} target="_blank" rel="noreferrer">
+                              {mat.file_url ? <FileText className="w-4 h-4" /> : <ExternalLink className="w-4 h-4" />}
+                            </a>
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

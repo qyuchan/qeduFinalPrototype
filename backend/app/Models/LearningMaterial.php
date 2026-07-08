@@ -35,6 +35,11 @@ class LearningMaterial extends Model
         return $this->belongsTo(Topic::class, 'topic_id', 'topic_id');
     }
 
+    public function uploader()
+    {
+        return $this->belongsTo(User::class, 'uploaded_by', 'user_id');
+    }
+
     public function interactionLogs()
     {
         return $this->hasMany(InteractionLog::class, 'material_id', 'material_id');
