@@ -36,7 +36,6 @@ type NewQuiz = {
   class_id:           string
   title:              string
   description:        string
-  quiz_type:          string
   passing_threshold:  number
   time_limit_minutes: number
   questions:          NewQuestion[]
@@ -51,7 +50,7 @@ const blankQuestion = (): NewQuestion => ({
 })
 const blankQuiz = (): NewQuiz => ({
   topic_id: '', class_id: 'none', title: '', description: '',
-  quiz_type: 'formative', passing_threshold: 60, time_limit_minutes: 30,
+  passing_threshold: 60, time_limit_minutes: 30,
   questions: [blankQuestion()],
 })
 
@@ -450,15 +449,6 @@ function TopicTagSelect({ value, onChange, tags, compact }: { value: string; onC
   )
 }
 
-// ─── Badge colours ───────────────────────────────────────────────────────────
-
-const quizTypeColor: Record<string, string> = {
-  formative:  'bg-blue-500/10   text-blue-600   border-blue-300',
-  summative:  'bg-purple-500/10 text-purple-600 border-purple-300',
-  diagnostic: 'bg-amber-500/10  text-amber-600  border-amber-300',
-  remedial:   'bg-rose-500/10   text-rose-600   border-rose-300',
-}
-
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function QuizzesPanel() {
@@ -560,7 +550,6 @@ export function QuizzesPanel() {
         class_id:           full.class_id ? String(full.class_id) : 'none',
         title:              full.title,
         description:        full.description || '',
-        quiz_type:          full.quiz_type,
         passing_threshold:  full.passing_threshold,
         time_limit_minutes: full.time_limit_minutes || 0,
         questions: (full.questions ?? []).map(q => ({
@@ -607,7 +596,6 @@ export function QuizzesPanel() {
         class_id:           (form.class_id && form.class_id !== 'none') ? Number(form.class_id) : undefined,
         title:              form.title,
         description:        form.description || undefined,
-        quiz_type:          form.quiz_type,
         passing_threshold:  form.passing_threshold,
         time_limit_minutes: form.time_limit_minutes || undefined,
         questions: form.questions.map(q => ({
@@ -683,7 +671,6 @@ export function QuizzesPanel() {
         <div>
           <h1 className="text-2xl font-bold">{viewingQuiz.title}</h1>
           <div className="flex items-center gap-2 flex-wrap mt-1.5">
-            <Badge variant="outline" className={quizTypeColor[viewingQuiz.quiz_type] ?? ''}>{viewingQuiz.quiz_type}</Badge>
             {viewingQuiz.topic && (
               <Badge variant="outline" className="text-xs text-primary border-primary/30">{viewingQuiz.topic.topic_name}</Badge>
             )}
@@ -772,17 +759,6 @@ export function QuizzesPanel() {
                   <SelectItem value="none">All classes / unassigned</SelectItem>
                   {classes.map(c => (
                     <SelectItem key={c.class_id} value={String(c.class_id)}>{c.class_name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Quiz Type</Label>
-              <Select value={form.quiz_type} onValueChange={v => setQuizField('quiz_type', v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {['formative', 'summative', 'diagnostic', 'remedial'].map(t => (
-                    <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -929,9 +905,6 @@ export function QuizzesPanel() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <span className="font-semibold text-foreground">{quiz.title}</span>
-                      <Badge variant="outline" className={quizTypeColor[quiz.quiz_type] ?? ''}>
-                        {quiz.quiz_type}
-                      </Badge>
                       {quiz.topic && (
                         <Badge variant="outline" className="text-xs text-primary border-primary/30">
                           {quiz.topic.topic_name}

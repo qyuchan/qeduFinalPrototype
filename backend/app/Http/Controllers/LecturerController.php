@@ -803,7 +803,6 @@ class LecturerController extends Controller
             'class_id'                          => 'nullable|integer|exists:classes,class_id',
             'title'                             => 'required|string|max:200',
             'description'                       => 'nullable|string',
-            'quiz_type'                         => 'required|in:diagnostic,formative,summative,remedial',
             'passing_threshold'                 => 'required|numeric|min:0|max:100',
             'time_limit_minutes'                => 'nullable|integer|min:1',
             'questions'                         => 'required|array|min:1',
@@ -824,13 +823,12 @@ class LecturerController extends Controller
 
         $totalMarks = collect($data['questions'])->sum('marks');
 
-        // For formative quizzes, assign the next set_number within this topic
-        $setNumber = null;
-        if ($data['quiz_type'] === 'formative') {
-            $setNumber = Quiz::where('topic_id', $data['topic_id'])
-                ->where('quiz_type', 'formative')
-                ->max('set_number') + 1 ?? 1;
-        }
+        // Summative/diagnostic/remedial quiz types were never actually reachable by
+        // students (QuizController::fetch only ever serves 'formative') — creation
+        // is locked to the one type that works instead of offering a dead choice.
+        $setNumber = Quiz::where('topic_id', $data['topic_id'])
+            ->where('quiz_type', 'formative')
+            ->max('set_number') + 1 ?? 1;
 
         $quiz = Quiz::create([
             'topic_id'           => $data['topic_id'],
@@ -838,7 +836,7 @@ class LecturerController extends Controller
             'created_by'         => $request->user()->user_id,
             'title'              => $data['title'],
             'description'        => $data['description'] ?? null,
-            'quiz_type'          => $data['quiz_type'],
+            'quiz_type'          => 'formative',
             'set_number'         => $setNumber,
             'total_marks'        => $totalMarks,
             'passing_threshold'  => $data['passing_threshold'],
@@ -945,7 +943,6 @@ class LecturerController extends Controller
             'class_id'                          => 'nullable|integer|exists:classes,class_id',
             'title'                             => 'required|string|max:200',
             'description'                       => 'nullable|string',
-            'quiz_type'                         => 'required|in:diagnostic,formative,summative,remedial',
             'passing_threshold'                 => 'required|numeric|min:0|max:100',
             'time_limit_minutes'                => 'nullable|integer|min:1',
             'questions'                         => 'required|array|min:1',
@@ -969,7 +966,6 @@ class LecturerController extends Controller
             'class_id'           => $data['class_id'] ?? null,
             'title'              => $data['title'],
             'description'        => $data['description'] ?? null,
-            'quiz_type'          => $data['quiz_type'],
             'passing_threshold'  => $data['passing_threshold'],
             'time_limit_minutes' => $data['time_limit_minutes'] ?? null,
             'total_marks'        => $totalMarks,

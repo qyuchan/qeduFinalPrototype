@@ -133,7 +133,6 @@ export interface UpdateQuizPayload {
   class_id?: number
   title: string
   description?: string
-  quiz_type: string
   passing_threshold: number
   time_limit_minutes?: number
   questions: UpdateQuizQuestion[]
@@ -144,7 +143,6 @@ export interface CreateQuizPayload {
   class_id?: number
   title: string
   description?: string
-  quiz_type: string
   passing_threshold: number
   time_limit_minutes?: number
   questions: QuizQuestion[]
