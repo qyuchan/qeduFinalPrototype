@@ -56,13 +56,13 @@ const lightVars: React.CSSProperties = {
 export default function LoginPage() {
   const { login, loading, error } = useAuth()
   const router = useRouter()
-  const [email,    setEmail]    = useState('')
-  const [password, setPassword] = useState('')
+  const [identifier, setIdentifier] = useState('')
+  const [password,   setPassword]   = useState('')
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      await login(email, password)
+      await login(identifier, password)
       router.replace('/')
     } catch {}
   }
@@ -101,14 +101,14 @@ export default function LoginPage() {
             )}
             <form onSubmit={submit} className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="identifier">Email or Username</Label>
                 <Input
-                  id="email"
-                  type="email"
+                  id="identifier"
+                  type="text"
                   required
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="your@email.com"
+                  value={identifier}
+                  onChange={e => setIdentifier(e.target.value)}
+                  placeholder="your@email.com or username"
                 />
               </div>
               <div className="space-y-1.5">

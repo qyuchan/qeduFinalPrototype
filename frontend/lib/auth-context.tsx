@@ -7,7 +7,7 @@ interface AuthState {
   user: User | null
   loading: boolean
   error: string | null
-  login: (email: string, password: string) => Promise<User>
+  login: (login: string, password: string) => Promise<User>
   register: (data: Record<string, string>) => Promise<User>
   logout: () => Promise<void>
 }
@@ -27,10 +27,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
   const [error,   setError]   = useState<string | null>(null)
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (login: string, password: string) => {
     setLoading(true); setError(null)
     try {
-      const data = await authApi.login(email, password)
+      const data = await authApi.login(login, password)
       localStorage.setItem('token', data.token)
       localStorage.setItem('user',  JSON.stringify(data.user))
       setUser(data.user)
