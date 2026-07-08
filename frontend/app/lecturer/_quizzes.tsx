@@ -471,9 +471,8 @@ export function QuizzesPanel() {
     Promise.all([
       lecturerApi.quizzes(),
       lecturerApi.topics(),
-      lecturerApi.questionTags(),
     ])
-      .then(([qz, tops, tgs]) => { setQuizzes(qz); setTopics(tops); setTags(tgs) })
+      .then(([qz, tops]) => { setQuizzes(qz); setTopics(tops) })
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
@@ -481,6 +480,17 @@ export function QuizzesPanel() {
   useEffect(() => {
     if (!form.topic_id) { setSubtopics([]); return }
     lecturerApi.topicSubtopics(Number(form.topic_id)).then(setSubtopics).catch(() => setSubtopics([]))
+  }, [form.topic_id])
+
+  // Topic Tag suggestions: same shared pool as Materials' Tags/Keywords (tags +
+  // keywords already used on this topic's materials, plus topic_tag values already
+  // used on this topic's questions by any lecturer) — matching vocabulary here is
+  // what actually lets cbf.py connect a wrong answer to a relevant material.
+  useEffect(() => {
+    if (!form.topic_id) { setTags([]); return }
+    lecturerApi.topicTagSuggestions(Number(form.topic_id))
+      .then(s => setTags(s.question_tags))
+      .catch(() => setTags([]))
   }, [form.topic_id])
 
   // ── Form helpers ──────────────────────────────────────────────────────────
@@ -629,9 +639,6 @@ export function QuizzesPanel() {
           return lecturerApi.uploadQuestionFigure(qId, q.image)
         }),
       ])
-
-      // Refresh tags after save so new topic_tags become available
-      lecturerApi.questionTags().then(setTags).catch(() => {})
 
       cancelCreate()
     } catch (err: any) {

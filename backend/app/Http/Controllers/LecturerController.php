@@ -671,7 +671,7 @@ class LecturerController extends Controller
     // Tag/keyword suggestions for a topic, built from what other materials in that
     // topic already used (tags/keywords are stored as comma-separated strings, not
     // a normalised table). This grows on its own as materials get tagged, so it works
-    // for any topic — including ones with no hardcoded suggestion list at all.
+    // for any topic: including ones with no hardcoded suggestion list at all.
     public function topicTagSuggestions(Request $request, int $topicId): JsonResponse
     {
         $this->ensureLecturer($request);
@@ -690,9 +690,33 @@ class LecturerController extends Controller
             ->sort()
             ->values();
 
+        $materialTags     = $split('tags');
+        $materialKeywords = $split('keywords');
+
+        // Quiz question_tag suggestions reuse the exact same pool as materials on
+        // purpose: cbf.py matches a student's wrong-answer topic_tag against material
+        // tags/keywords via TF-IDF, so a question tagged with the same vocabulary a
+        // material already uses is what actually makes that match land. Also folds in
+        // topic_tag values already used on other questions in this topic (any
+        // lecturer), so established conventions keep showing up even if a term was
+        // never added to a material's own Tags/Keywords.
+        $questionTags = Question::whereHas('quiz', fn ($q) => $q->where('topic_id', $topicId))
+            ->whereNotNull('topic_tag')
+            ->pluck('topic_tag')
+            ->map(fn ($s) => trim($s))
+            ->filter();
+
+        $topicTagSuggestions = $materialTags
+            ->merge($materialKeywords)
+            ->merge($questionTags)
+            ->unique()
+            ->sort()
+            ->values();
+
         return response()->json([
-            'tags'     => $split('tags'),
-            'keywords' => $split('keywords'),
+            'tags'         => $materialTags,
+            'keywords'     => $materialKeywords,
+            'question_tags' => $topicTagSuggestions,
         ]);
     }
 
@@ -911,17 +935,6 @@ class LecturerController extends Controller
         $quiz->delete();
 
         return response()->json(['message' => 'Deleted']);
-    }
-
-    public function questionTags(Request $request): JsonResponse
-    {
-        $this->ensureLecturer($request);
-        $tags = Question::whereHas('quiz', fn($q) => $q->where('created_by', $request->user()->user_id))
-            ->whereNotNull('topic_tag')
-            ->distinct()
-            ->orderBy('topic_tag')
-            ->pluck('topic_tag');
-        return response()->json($tags);
     }
 
     public function updateQuiz(Request $request, int $id): JsonResponse

@@ -508,8 +508,8 @@ export const lecturerApi = {
   allTopicMaterials: async (topicId: number): Promise<Material[]> => {
     return api.get<Material[]>(`/lecturer/topics/${topicId}/materials`)
   },
-  topicTagSuggestions: async (topicId: number): Promise<{ tags: string[]; keywords: string[] }> => {
-    return api.get<{ tags: string[]; keywords: string[] }>(`/lecturer/topics/${topicId}/tag-suggestions`)
+  topicTagSuggestions: async (topicId: number): Promise<{ tags: string[]; keywords: string[]; question_tags: string[] }> => {
+    return api.get<{ tags: string[]; keywords: string[]; question_tags: string[] }>(`/lecturer/topics/${topicId}/tag-suggestions`)
   },
 
   // Quizzes - 5-min cache, invalidated on any mutation
@@ -536,7 +536,6 @@ export const lecturerApi = {
     _quizzes = null
     return result
   },
-  questionTags: (): Promise<string[]> => api.get<string[]>('/lecturer/question-tags'),
   deleteQuestionFigure: (questionId: number): Promise<{ message: string }> =>
     api.delete<{ message: string }>(`/lecturer/questions/${questionId}/figure`),
 

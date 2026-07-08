@@ -98,7 +98,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/quizzes/{id}',                              [LecturerController::class, 'showQuiz']);
         Route::patch('/quizzes/{id}',                            [LecturerController::class, 'updateQuiz']);
         Route::delete('/quizzes/{id}',                           [LecturerController::class, 'destroyQuiz']);
-        Route::get('/question-tags',                             [LecturerController::class, 'questionTags']);
         Route::delete('/questions/{questionId}/figure',          [LecturerController::class, 'deleteQuestionFigure']);
 
         // Flagged questions & remediations
