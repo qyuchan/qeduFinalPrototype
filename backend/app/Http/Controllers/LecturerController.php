@@ -374,13 +374,17 @@ class LecturerController extends Controller
         // A student's mastery/quiz data should only be visible to the one lecturer
         // actually teaching them — without this, any lecturer could claim a student
         // already enrolled elsewhere and see their academic data.
-        $enrolledWithAnotherLecturer = ClassEnrollment::where('student_id', $student->user_id)
+        $conflictingEnrollment = ClassEnrollment::where('student_id', $student->user_id)
             ->where('status', 'active')
             ->whereHas('classRoom', fn ($q) => $q->where('lecturer_id', '!=', $request->user()->user_id))
-            ->exists();
+            ->with('classRoom.lecturer:user_id,email')
+            ->first();
 
-        if ($enrolledWithAnotherLecturer) {
-            return response()->json(['message' => 'This student is already enrolled in another lecturer\'s class.'], 409);
+        if ($conflictingEnrollment) {
+            $otherLecturerEmail = $conflictingEnrollment->classRoom->lecturer->email;
+            return response()->json([
+                'message' => "This student is already enrolled in another lecturer's class. Please contact {$otherLecturerEmail} to resolve this issue.",
+            ], 409);
         }
 
         $enrollment = ClassEnrollment::updateOrCreate(
