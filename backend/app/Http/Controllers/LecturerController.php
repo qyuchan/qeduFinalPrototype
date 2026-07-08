@@ -787,8 +787,9 @@ class LecturerController extends Controller
     public function quizzes(Request $request)
     {
         $this->ensureLecturer($request);
-        return Quiz::with('topic')
-            ->where('created_by', $request->user()->user_id)
+        // Shared across all lecturers (same reasoning as Materials): editing/deleting
+        // stays scoped to created_by below, this list is just for visibility.
+        return Quiz::with(['topic', 'creator:user_id,full_name,email'])
             ->withCount('questions')
             ->orderByDesc('quiz_id')
             ->get();
@@ -892,10 +893,15 @@ class LecturerController extends Controller
     public function showQuiz(Request $request, $id)
     {
         $this->ensureLecturer($request);
-        return Quiz::where('quiz_id', $id)
-            ->where('created_by', $request->user()->user_id)
-            ->with('questions.options', 'topic')
+        // Viewable by any lecturer (shared pool, same as quizzes()); editing/deleting
+        // still checks created_by in updateQuiz()/destroyQuiz() below.
+        $quiz = Quiz::where('quiz_id', $id)
+            ->with(['questions.options', 'topic', 'creator:user_id,full_name,email'])
             ->firstOrFail();
+
+        return response()->json(array_merge($quiz->toArray(), [
+            'has_attempts' => QuizAttempt::where('quiz_id', $quiz->quiz_id)->exists(),
+        ]));
     }
 
     public function destroyQuiz(Request $request, $id)
@@ -985,12 +991,15 @@ class LecturerController extends Controller
                         'explanation'      => $qData['explanation'] ?? null,
                         'sequence_order'   => $i + 1,
                     ]);
+                    // is_correct is intentionally left untouched here: once a student has
+                    // attempted this quiz, their "correct answer" review depends on it staying
+                    // fixed. Changing it later would make an already-graded attempt's review
+                    // page silently disagree with what the student was actually scored against.
                     $existingOpts = $q->options->values();
                     foreach ($qData['options'] as $j => $optData) {
                         if (isset($existingOpts[$j])) {
                             $existingOpts[$j]->update([
                                 'option_text' => $optData['option_text'],
-                                'is_correct'  => $optData['is_correct'],
                             ]);
                         }
                     }

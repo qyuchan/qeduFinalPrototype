@@ -40,4 +40,9 @@ class Quiz extends Model
     {
         return $this->hasMany(QuizAttempt::class, 'quiz_id', 'quiz_id');
     }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by', 'user_id');
+    }
 }

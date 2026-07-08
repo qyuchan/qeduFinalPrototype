@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useRef, useCallback } from "react"
-import { lecturerApi, type Quiz, type Topic, type Subtopic, type ClassRoom, type CreateQuizPayload, type UpdateQuizPayload } from "@/lib/api/lecturer"
+import { lecturerApi, type Quiz, type QuizQuestion, type Topic, type Subtopic, type ClassRoom, type CreateQuizPayload, type UpdateQuizPayload } from "@/lib/api/lecturer"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,9 +10,10 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Plus, Trash2, ChevronDown, ChevronUp, CheckCircle2, ImagePlus, X, Pencil, AlertTriangle } from "lucide-react"
+import { Plus, Trash2, ChevronDown, ChevronUp, CheckCircle2, ImagePlus, X, Pencil, AlertTriangle, Eye, ArrowLeft } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { MathText } from "@/components/math-text"
+import { useAuth } from "@/lib/auth-context"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -132,12 +133,67 @@ const Q_SYMBOL_TABS: { id: string; label: string; symbols: Sym[] }[] = [
 
 const OPTION_LABELS = ['A', 'B', 'C', 'D']
 
+// Read-only rendering of a single question: used both as the editor's live preview
+// pane and standalone in the read-only "View Quiz" screen for quizzes you don't own.
+function QuestionPreview({ questionText, imageUrl, options, explanation }: {
+  questionText: string
+  imageUrl?: string | null
+  options: { option_text: string; is_correct: boolean }[]
+  explanation?: string | null
+}) {
+  return (
+    <div className="rounded-xl border bg-muted/30 p-4 space-y-3">
+      {imageUrl && (
+        <div className="flex justify-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={imageUrl} alt="figure" className="max-h-40 rounded-lg border object-contain" />
+        </div>
+      )}
+
+      <div className="text-sm font-semibold leading-snug">
+        {questionText
+          ? <MathText text={questionText} />
+          : <span className="text-muted-foreground italic font-normal">Question text appears here…</span>
+        }
+      </div>
+
+      <div className="space-y-1.5 pt-1">
+        {options.map((opt, oi) => (
+          <div key={oi}
+            className={cn(
+              "flex items-center gap-2 rounded-lg border px-3 py-2 text-sm",
+              opt.is_correct
+                ? "border-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300"
+                : "border-border bg-background text-foreground"
+            )}>
+            <span className={cn(
+              "w-5 h-5 rounded-full border-2 text-[10px] font-bold flex items-center justify-center shrink-0",
+              opt.is_correct ? "border-emerald-500 bg-emerald-500 text-white" : "border-muted-foreground text-muted-foreground"
+            )}>{OPTION_LABELS[oi]}</span>
+            {opt.option_text
+              ? <MathText text={opt.option_text} />
+              : <span className="text-muted-foreground italic text-xs">Option {OPTION_LABELS[oi]}…</span>
+            }
+          </div>
+        ))}
+      </div>
+
+      {explanation && (
+        <div className="rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+          <span className="font-semibold">Explanation: </span>{explanation}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function QuestionEditorContent({
-  q, qi, tags, subtopics,
+  q, qi, tags, subtopics, correctnessLocked,
   onQField, onCorrect, onOptionText, onImageChange, onRemoveImage,
   onMarks, onDifficulty, onTopicTag, onSubtopicId, onExplanation,
 }: {
   q: NewQuestion; qi: number; tags: string[]; subtopics: Subtopic[]
+  correctnessLocked?: boolean
   onQField:       (field: keyof NewQuestion, val: any) => void
   onCorrect:      (oi: number) => void
   onOptionText:   (oi: number, val: string) => void
@@ -295,13 +351,27 @@ function QuestionEditorContent({
 
         {/* Options */}
         <div className="space-y-1.5">
-          <Label className="text-xs">Options <span className="text-muted-foreground font-normal">(click ● to mark correct; supports $math$)</span></Label>
+          <Label className="text-xs">
+            Options{' '}
+            <span className="text-muted-foreground font-normal">
+              {correctnessLocked ? '(supports $math$)' : '(click ● to mark correct; supports $math$)'}
+            </span>
+          </Label>
+          {correctnessLocked && (
+            <p className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+              Students have already attempted this quiz, so the correct answer is locked in to protect their grading. You can still fix wording/typos.
+            </p>
+          )}
           {q.options.map((opt, oi) => (
             <div key={oi} className="flex items-start gap-2">
-              <button type="button" onClick={() => onCorrect(oi)}
+              <button type="button" onClick={() => { if (!correctnessLocked) onCorrect(oi) }}
+                disabled={correctnessLocked}
+                title={correctnessLocked ? 'Correct answer is locked once a quiz has attempts' : undefined}
                 className={cn(
                   "mt-1.5 w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors",
-                  opt.is_correct ? "border-emerald-500 bg-emerald-500" : "border-muted-foreground hover:border-primary"
+                  opt.is_correct ? "border-emerald-500 bg-emerald-500" : "border-muted-foreground hover:border-primary",
+                  correctnessLocked && "cursor-not-allowed opacity-70 hover:border-muted-foreground"
                 )}>
                 {opt.is_correct && <CheckCircle2 className="w-3 h-3 text-white" />}
               </button>
@@ -326,53 +396,14 @@ function QuestionEditorContent({
 
       {/* ── RIGHT: live preview ───────────────────────── */}
       <div className="min-w-0">
-        <div className="sticky top-4 rounded-xl border bg-muted/30 p-4 space-y-3">
+        <div className="sticky top-4 space-y-2">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Live Preview</p>
-
-          {/* Figure */}
-          {previewUrl && (
-            <div className="flex justify-center">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={previewUrl} alt="figure" className="max-h-40 rounded-lg border object-contain" />
-            </div>
-          )}
-
-          {/* Question text */}
-          <div className="text-sm font-semibold leading-snug">
-            {q.question_text
-              ? <MathText text={q.question_text} />
-              : <span className="text-muted-foreground italic font-normal">Question text appears here…</span>
-            }
-          </div>
-
-          {/* Options */}
-          <div className="space-y-1.5 pt-1">
-            {q.options.map((opt, oi) => (
-              <div key={oi}
-                className={cn(
-                  "flex items-center gap-2 rounded-lg border px-3 py-2 text-sm",
-                  opt.is_correct
-                    ? "border-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300"
-                    : "border-border bg-background text-foreground"
-                )}>
-                <span className={cn(
-                  "w-5 h-5 rounded-full border-2 text-[10px] font-bold flex items-center justify-center shrink-0",
-                  opt.is_correct ? "border-emerald-500 bg-emerald-500 text-white" : "border-muted-foreground text-muted-foreground"
-                )}>{OPTION_LABELS[oi]}</span>
-                {opt.option_text
-                  ? <MathText text={opt.option_text} />
-                  : <span className="text-muted-foreground italic text-xs">Option {OPTION_LABELS[oi]}…</span>
-                }
-              </div>
-            ))}
-          </div>
-
-          {/* Explanation */}
-          {q.explanation && (
-            <div className="rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
-              <span className="font-semibold">Explanation: </span>{q.explanation}
-            </div>
-          )}
+          <QuestionPreview
+            questionText={q.question_text}
+            imageUrl={previewUrl}
+            options={q.options}
+            explanation={q.explanation}
+          />
         </div>
       </div>
     </div>
@@ -431,13 +462,14 @@ const quizTypeColor: Record<string, string> = {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function QuizzesPanel() {
+  const { user } = useAuth()
   const [quizzes,     setQuizzes]     = useState<Quiz[]>([])
   const [topics,      setTopics]      = useState<Topic[]>([])
   const [classes,     setClasses]     = useState<ClassRoom[]>([])
   const [tags,        setTags]        = useState<string[]>([])
   const [subtopics,   setSubtopics]   = useState<Subtopic[]>([])
   const [loading,     setLoading]     = useState(true)
-  const [view,        setView]        = useState<'list' | 'create'>('list')
+  const [view,        setView]        = useState<'list' | 'create' | 'detail'>('list')
   const [form,        setForm]        = useState<NewQuiz>(blankQuiz())
   const [expanded,    setExpanded]    = useState<Record<number, boolean>>({})
   const [saving,      setSaving]      = useState(false)
@@ -445,6 +477,8 @@ export function QuizzesPanel() {
   const [editId,      setEditId]      = useState<number | null>(null)
   const [hasAttempts, setHasAttempts] = useState(false)
   const [loadingEdit, setLoadingEdit] = useState(false)
+  const [viewingQuiz, setViewingQuiz] = useState<(Quiz & { questions: QuizQuestion[] }) | null>(null)
+  const [loadingView, setLoadingView] = useState(false)
 
   useEffect(() => {
     Promise.all([
@@ -500,12 +534,27 @@ export function QuizzesPanel() {
     setError(null); setEditId(null); setHasAttempts(false)
   }
 
+  const handleView = async (quiz: Quiz) => {
+    setLoadingView(true)
+    try {
+      const full = await lecturerApi.showQuiz(quiz.quiz_id)
+      setViewingQuiz(full)
+      setView('detail')
+    } catch {
+      setError('Failed to load quiz.')
+    } finally {
+      setLoadingView(false)
+    }
+  }
+
+  const closeView = () => { setView('list'); setViewingQuiz(null) }
+
   const handleEdit = async (quiz: Quiz) => {
     setLoadingEdit(true)
     try {
       const full = await lecturerApi.showQuiz(quiz.quiz_id)
       setEditId(quiz.quiz_id)
-      setHasAttempts(false)
+      setHasAttempts(!!full.has_attempts)
       setForm({
         topic_id:           String(full.topic_id),
         class_id:           full.class_id ? String(full.class_id) : 'none',
@@ -623,6 +672,50 @@ export function QuizzesPanel() {
     <div className="space-y-3">
       <Skeleton className="h-8 w-48" />
       {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full" />)}
+    </div>
+  )
+
+  // ── Read-only detail view (quizzes you didn't create) ───────────────────────
+
+  if (view === 'detail' && viewingQuiz) return (
+    <div className="space-y-6 max-w-3xl mx-auto">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">{viewingQuiz.title}</h1>
+          <div className="flex items-center gap-2 flex-wrap mt-1.5">
+            <Badge variant="outline" className={quizTypeColor[viewingQuiz.quiz_type] ?? ''}>{viewingQuiz.quiz_type}</Badge>
+            {viewingQuiz.topic && (
+              <Badge variant="outline" className="text-xs text-primary border-primary/30">{viewingQuiz.topic.topic_name}</Badge>
+            )}
+            <span className="text-xs text-muted-foreground">Pass: {viewingQuiz.passing_threshold}%</span>
+            {viewingQuiz.time_limit_minutes && <span className="text-xs text-muted-foreground">{viewingQuiz.time_limit_minutes} min</span>}
+          </div>
+          {viewingQuiz.creator && (
+            <p className="text-xs text-muted-foreground mt-1">Created by {viewingQuiz.creator.full_name} ({viewingQuiz.creator.email})</p>
+          )}
+        </div>
+        <Button variant="outline" onClick={closeView} className="gap-2">
+          <ArrowLeft className="w-4 h-4" /> Back
+        </Button>
+      </div>
+
+      <p className="text-xs text-muted-foreground">
+        Read-only: you can only edit or delete quizzes you created yourself.
+      </p>
+
+      <div className="space-y-4">
+        {(viewingQuiz.questions ?? []).map((q, qi) => (
+          <div key={q.question_id ?? qi} className="space-y-2">
+            <Badge variant="outline" className="text-primary border-primary/30">Q{qi + 1}</Badge>
+            <QuestionPreview
+              questionText={q.question_text}
+              imageUrl={q.image_path ? `/storage/${q.image_path}` : null}
+              options={q.options}
+              explanation={q.explanation}
+            />
+          </div>
+        ))}
+      </div>
     </div>
   )
 
@@ -767,6 +860,7 @@ export function QuizzesPanel() {
                   <CardContent className="pt-0">
                     <QuestionEditorContent
                       q={q} qi={qi} tags={tags} subtopics={subtopics}
+                      correctnessLocked={!!(editId && hasAttempts)}
                       onQField={(field, val) => setQField(qi, field, val)}
                       onCorrect={oi => setCorrect(qi, oi)}
                       onOptionText={(oi, val) => setOptionText(qi, oi, val)}
@@ -812,7 +906,7 @@ export function QuizzesPanel() {
         <div>
           <h1 className="text-2xl font-bold">Quizzes</h1>
           <p className="text-muted-foreground text-sm">
-            {quizzes.length} quiz{quizzes.length !== 1 ? 'zes' : ''} created
+            {quizzes.length} quiz{quizzes.length !== 1 ? 'zes' : ''} available &middot; shared across all lecturers
           </p>
         </div>
         <Button onClick={() => setView('create')} className="gap-2">
@@ -852,21 +946,37 @@ export function QuizzesPanel() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">
-                    <Button
-                      variant="ghost" size="sm"
-                      className="text-muted-foreground hover:text-foreground h-8 w-8 p-0"
-                      disabled={loadingEdit}
-                      onClick={() => handleEdit(quiz)}
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost" size="sm"
-                      className="text-destructive hover:text-destructive h-8 w-8 p-0"
-                      onClick={() => handleDelete(quiz.quiz_id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    {quiz.created_by === user?.user_id ? (
+                      <>
+                        <Button
+                          variant="ghost" size="sm"
+                          className="text-muted-foreground hover:text-foreground h-8 w-8 p-0"
+                          disabled={loadingEdit}
+                          onClick={() => handleEdit(quiz)}
+                          title="Edit"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost" size="sm"
+                          className="text-destructive hover:text-destructive h-8 w-8 p-0"
+                          onClick={() => handleDelete(quiz.quiz_id)}
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        variant="ghost" size="sm"
+                        className="text-muted-foreground hover:text-foreground h-8 w-8 p-0"
+                        disabled={loadingView}
+                        onClick={() => handleView(quiz)}
+                        title="View (read-only — created by another lecturer)"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               </CardContent>

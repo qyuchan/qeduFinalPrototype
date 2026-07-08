@@ -153,6 +153,8 @@ export interface Quiz {
   quiz_id: number
   topic_id: number
   class_id: number | null
+  created_by: number
+  creator?: { user_id: number; full_name: string; email: string } | null
   topic?: Topic
   title: string
   description: string | null
@@ -163,6 +165,7 @@ export interface Quiz {
   is_active: boolean
   questions_count?: number
   questions?: QuizQuestion[]
+  has_attempts?: boolean
 }
 
 export interface StudentMastery {
