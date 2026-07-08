@@ -24,8 +24,7 @@ function PillPicker({ label, hint, value, onChange, groups, searchable }: {
   groups: { label: string; items: string[] }[]
   searchable?: boolean
 }) {
-  const [search,      setSearch]      = useState('')
-  const [customInput, setCustomInput] = useState('')
+  const [search, setSearch] = useState('')
   const selected = new Set(value.split(',').map(s => s.trim()).filter(Boolean))
   const knownItems = new Set(groups.flatMap(g => g.items))
   const customSelected = [...selected].filter(item => !knownItems.has(item))
@@ -37,12 +36,12 @@ function PillPicker({ label, hint, value, onChange, groups, searchable }: {
   }
 
   const addCustom = () => {
-    const item = customInput.trim().toLowerCase()
+    const item = search.trim().toLowerCase()
     if (!item) return
     const next = new Set(selected)
     next.add(item)
     onChange([...next].join(', '))
-    setCustomInput('')
+    setSearch('')
   }
 
   const shown = search
@@ -54,22 +53,13 @@ function PillPicker({ label, hint, value, onChange, groups, searchable }: {
       <Label>
         {label}{hint && <span className="text-muted-foreground font-normal text-xs ml-1">{hint}</span>}
       </Label>
-      <div className="flex gap-1.5">
-        <input
-          value={customInput}
-          onChange={e => setCustomInput(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustom() } }}
-          placeholder={`Add a custom ${label.toLowerCase().replace(/s$/, '')}...`}
-          className="flex-1 h-8 px-3 text-sm rounded-md border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-        />
-        <button
-          type="button"
-          onClick={addCustom}
-          className="h-8 px-3 rounded-md border border-input text-sm text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors"
-        >
-          Add
-        </button>
-      </div>
+      <input
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustom() } }}
+        placeholder={`Search ${label.toLowerCase()}, or type your own and press Enter...`}
+        className="w-full h-8 px-3 text-sm rounded-md border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+      />
       {customSelected.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {customSelected.map(item => (
@@ -84,14 +74,6 @@ function PillPicker({ label, hint, value, onChange, groups, searchable }: {
             </button>
           ))}
         </div>
-      )}
-      {searchable && (
-        <input
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder={`Filter ${label.toLowerCase()}...`}
-          className="w-full h-8 px-3 text-sm rounded-md border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-        />
       )}
       <div className={cn('space-y-2', searchable && 'max-h-48 overflow-y-auto pr-1')}>
         {shown.map(g => {
@@ -455,7 +437,7 @@ export function MaterialsPanel() {
               <div className="md:col-span-2 rounded-lg border border-border p-3">
                 <PillPicker
                   label="Keywords"
-                  hint="(suggestions grow from what's already tagged in this topic — or type your own)"
+                  hint="(suggestions grow from what's already tagged in this topic: type your own too)"
                   value={form.keywords ?? ''}
                   onChange={setField('keywords')}
                   groups={suggestedKeywords.length > 0
@@ -464,6 +446,12 @@ export function MaterialsPanel() {
                   }
                   searchable
                 />
+                {!form.topic_id && (
+                  <p className="text-xs text-muted-foreground mt-2">Select a Topic above first: suggestions are specific to each topic.</p>
+                )}
+                {!!form.topic_id && suggestedKeywords.length === 0 && (
+                  <p className="text-xs text-muted-foreground mt-2">No materials tagged in this topic yet. Type your own keywords above to get started.</p>
+                )}
               </div>
 
               <div className="md:col-span-2 flex justify-end gap-3 pt-2">
