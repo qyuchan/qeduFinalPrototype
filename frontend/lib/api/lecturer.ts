@@ -295,6 +295,8 @@ export interface FlaggedQuestion {
   question_text: string
   difficulty_level: string
   topic_tag: string | null
+  quiz_creator_id: number
+  quiz_creator_name: string
   wrong_count: number
   affected_students: number
   options: FlaggedQuestionOption[]
@@ -316,7 +318,8 @@ const SUBTOPICS_TTL  = 5  * 60_000
 let _classes:   CacheEntry<ClassRoom[]>      | null = null
 let _materials: CacheEntry<Material[]>        | null = null
 let _quizzes:   CacheEntry<Quiz[]>            | null = null
-let _flagged:   CacheEntry<FlaggedQuestion[]> | null = null
+let _flagged:    CacheEntry<FlaggedQuestion[]> | null = null
+let _flaggedAll: CacheEntry<FlaggedQuestion[]> | null = null
 let _topics:    CacheEntry<Topic[]>           | null = null
 const _mastery    = new Map<string, CacheEntry<MasteryOverview>>()
 const _subtopics  = new Map<number, CacheEntry<Subtopic[]>>()
@@ -540,26 +543,32 @@ export const lecturerApi = {
     api.delete<{ message: string }>(`/lecturer/questions/${questionId}/figure`),
 
   // Flagged questions - 10-min cache, invalidated when remediations change
-  flaggedQuestions: async (): Promise<FlaggedQuestion[]> => {
-    const cached = hit(_flagged)
+  flaggedQuestions: async (all = false): Promise<FlaggedQuestion[]> => {
+    const slot = all ? _flaggedAll : _flagged
+    const cached = hit(slot)
     if (cached) return cached
-    const data = await api.get<FlaggedQuestion[]>('/lecturer/flagged-questions')
-    _flagged = { data, expires: Date.now() + FLAGGED_TTL }
+    const data = await api.get<FlaggedQuestion[]>(`/lecturer/flagged-questions${all ? '?all=1' : ''}`)
+    const entry = { data, expires: Date.now() + FLAGGED_TTL }
+    if (all) _flaggedAll = entry
+    else     _flagged    = entry
     return data
   },
   addRemediation: async (questionId: number, data: { material_id?: number; custom_explanation?: string }): Promise<Remediation> => {
     const result = await api.post<Remediation>(`/lecturer/questions/${questionId}/remediations`, data)
     _flagged = null
+    _flaggedAll = null
     return result
   },
   deleteRemediation: async (id: number): Promise<{ message: string }> => {
     const result = await api.delete<{ message: string }>(`/lecturer/remediations/${id}`)
     _flagged = null
+    _flaggedAll = null
     return result
   },
   dismissFlaggedQuestion: async (questionId: number): Promise<{ message: string }> => {
     const result = await api.post<{ message: string }>(`/lecturer/flagged-questions/${questionId}/dismiss`, {})
     _flagged = null
+    _flaggedAll = null
     return result
   },
 }

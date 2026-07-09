@@ -1085,18 +1085,22 @@ class LecturerController extends Controller
         $this->ensureLecturer($request);
 
         $lecturerId = $request->user()->user_id;
+        $all        = $request->boolean('all');
 
         $flagged = DB::table('student_answers as sa')
             ->join('quiz_attempts as qa', 'sa.attempt_id', '=', 'qa.attempt_id')
             ->join('questions as q',  'sa.question_id', '=', 'q.question_id')
             ->join('quizzes as qz',   'q.quiz_id',      '=', 'qz.quiz_id')
             ->join('users as u',      'qa.student_id',  '=', 'u.user_id')
+            ->leftJoin('users as qc', 'qz.created_by',  '=', 'qc.user_id')
             ->leftJoin('flagged_question_dismissals as fqd', function ($join) use ($lecturerId) {
                 $join->on('fqd.question_id', '=', 'q.question_id')
                      ->where('fqd.lecturer_id', '=', $lecturerId);
             })
-            ->whereIn('q.quiz_id', fn ($sub) =>
-                $sub->select('quiz_id')->from('quizzes')->where('created_by', $lecturerId)
+            ->when(!$all, fn ($query) =>
+                $query->whereIn('q.quiz_id', fn ($sub) =>
+                    $sub->select('quiz_id')->from('quizzes')->where('created_by', $lecturerId)
+                )
             )
             ->where('sa.is_correct', false)
             ->where('u.role', 'student')
@@ -1106,7 +1110,7 @@ class LecturerController extends Controller
                 $w->whereNull('fqd.dismissed_at')
                   ->orWhereColumn('sa.answered_at', '>', 'fqd.dismissed_at');
             })
-            ->groupBy('q.question_id', 'q.question_text', 'q.difficulty_level', 'q.topic_tag', 'q.quiz_id', 'qz.topic_id')
+            ->groupBy('q.question_id', 'q.question_text', 'q.difficulty_level', 'q.topic_tag', 'q.quiz_id', 'qz.topic_id', 'qz.created_by', 'qc.full_name')
             ->select([
                 'q.question_id',
                 'q.quiz_id',
@@ -1114,6 +1118,8 @@ class LecturerController extends Controller
                 'q.question_text',
                 'q.difficulty_level',
                 'q.topic_tag',
+                'qz.created_by as quiz_creator_id',
+                'qc.full_name as quiz_creator_name',
                 DB::raw('COUNT(sa.answer_id) as wrong_count'),
                 DB::raw('COUNT(DISTINCT qa.student_id) as affected_students'),
             ])

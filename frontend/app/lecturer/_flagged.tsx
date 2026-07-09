@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Input } from "@/components/ui/input"
-import { Trash2, Plus, ChevronDown, ChevronUp, BookOpen, Upload, FileText } from "lucide-react"
+import { Trash2, Plus, ChevronDown, ChevronUp, BookOpen, Upload, FileText, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { MathText } from "@/components/math-text"
+import { useAuth } from "@/lib/auth-context"
 
 // ─── Math symbols for explanation editor ──────────────────────────────────────
 
@@ -69,11 +70,13 @@ const diffColor: Record<string, string> = {
 
 function QuestionRow({
   question,
+  isOwn,
   onAdded,
   onDeleted,
   onDismissed,
 }: {
   question:    FlaggedQuestion
+  isOwn:       boolean
   onAdded:     (questionId: number, rem: Remediation) => void
   onDeleted:   (questionId: number, remediationId: number) => void
   onDismissed: (questionId: number) => void
@@ -167,31 +170,38 @@ function QuestionRow({
               {question.topic_tag && (
                 <Badge variant="secondary" className="text-xs">{question.topic_tag}</Badge>
               )}
+              {!isOwn && (
+                <Badge variant="outline" className="text-xs text-muted-foreground">
+                  By {question.quiz_creator_name}
+                </Badge>
+              )}
               <span className="text-xs text-destructive font-medium">
                 {question.wrong_count} wrong · {question.affected_students} student{question.affected_students !== 1 ? 's' : ''}
               </span>
             </div>
             <p className="text-sm font-semibold text-foreground leading-relaxed"><MathText text={question.question_text} /></p>
           </div>
-          <div className="flex items-center gap-1.5 flex-shrink-0">
-            <Button
-              variant="outline" size="sm"
-              onClick={() => { setExpanded(!expanded); setError(null) }}
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Add
-              {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-            </Button>
-            <Button
-              variant="ghost" size="sm"
-              className="text-destructive hover:text-destructive h-8 w-8 p-0"
-              title="Dismiss from this list: reappears if a student answers it wrong again"
-              onClick={handleDismiss}
-              disabled={dismissing}
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </Button>
-          </div>
+          {isOwn && (
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <Button
+                variant="outline" size="sm"
+                onClick={() => { setExpanded(!expanded); setError(null) }}
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add
+                {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              </Button>
+              <Button
+                variant="ghost" size="sm"
+                className="text-destructive hover:text-destructive h-8 w-8 p-0"
+                title="Dismiss from this list: reappears if a student answers it wrong again"
+                onClick={handleDismiss}
+                disabled={dismissing}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Answer options */}
@@ -398,15 +408,18 @@ function QuestionRow({
 // ─── Panel ────────────────────────────────────────────────────────────────────
 
 export function FlaggedQuestionsPanel() {
+  const { user } = useAuth()
+  const [scope,     setScope]     = useState<'own' | 'all'>('own')
   const [questions, setQuestions] = useState<FlaggedQuestion[]>([])
   const [loading,   setLoading]   = useState(true)
 
   useEffect(() => {
-    lecturerApi.flaggedQuestions()
+    setLoading(true)
+    lecturerApi.flaggedQuestions(scope === 'all')
       .then(setQuestions)
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [])
+  }, [scope])
 
   const handleAdded = (questionId: number, rem: Remediation) =>
     setQuestions(prev => prev.map(q =>
@@ -434,18 +447,44 @@ export function FlaggedQuestionsPanel() {
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
-      <div>
-        <h1 className="text-2xl font-bold">Flagged Questions</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Questions your students answered incorrectly. Write an explanation or upload a PDF, and it will appear in their dashboard.
-        </p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold">Flagged Questions</h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            {scope === 'own'
+              ? "Questions your students answered incorrectly. Write an explanation or upload a PDF, and it will appear in their dashboard."
+              : "Flagged questions across every lecturer's quizzes, read-only. Only the quiz's creator can add remediation or dismiss it."}
+          </p>
+        </div>
+        <div className="flex gap-1 rounded-lg bg-muted/50 p-1 flex-shrink-0">
+          <button
+            type="button" onClick={() => setScope('own')}
+            className={cn("px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+              scope === 'own' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            My Flagged Questions
+          </button>
+          <button
+            type="button" onClick={() => setScope('all')}
+            className={cn("px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5",
+              scope === 'all' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Users className="w-3.5 h-3.5" /> All Lecturers
+          </button>
+        </div>
       </div>
 
       {questions.length === 0 ? (
         <div className="flex items-center justify-center min-h-[300px]">
           <div className="text-center space-y-2">
             <p className="font-semibold text-foreground">No flagged questions yet</p>
-            <p className="text-sm text-muted-foreground">Questions students answer incorrectly will appear here once quiz attempts are submitted.</p>
+            <p className="text-sm text-muted-foreground">
+              {scope === 'own'
+                ? "Questions students answer incorrectly will appear here once quiz attempts are submitted."
+                : "No lecturer has any flagged questions right now."}
+            </p>
           </div>
         </div>
       ) : (
@@ -454,6 +493,7 @@ export function FlaggedQuestionsPanel() {
             <QuestionRow
               key={q.question_id}
               question={q}
+              isOwn={q.quiz_creator_id === user?.user_id}
               onAdded={handleAdded}
               onDeleted={handleDeleted}
               onDismissed={handleDismissed}
