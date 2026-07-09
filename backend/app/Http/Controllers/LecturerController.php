@@ -1154,9 +1154,10 @@ class LecturerController extends Controller
     {
         $this->ensureLecturer($request);
 
-        $question = Question::where('question_id', $questionId)
-            ->whereHas('quiz', fn ($q) => $q->where('created_by', $request->user()->user_id))
-            ->firstOrFail();
+        // Any lecturer may dismiss any flagged question: dismissals are already
+        // scoped to the dismissing lecturer's own view (flagged_question_dismissals
+        // is keyed by lecturer_id), so this never hides anything from anyone else.
+        $question = Question::where('question_id', $questionId)->firstOrFail();
 
         FlaggedQuestionDismissal::updateOrCreate(
             ['lecturer_id' => $request->user()->user_id, 'question_id' => $question->question_id],
@@ -1170,9 +1171,11 @@ class LecturerController extends Controller
     {
         $this->ensureLecturer($request);
 
-        $question = Question::where('question_id', $questionId)
-            ->whereHas('quiz', fn ($q) => $q->where('created_by', $request->user()->user_id))
-            ->firstOrFail();
+        // Any lecturer may add remediation to any flagged question: delivery to
+        // students is matched by topic_tag (concept), not quiz ownership, and
+        // destroyRemediation() already scopes deletion to the remediation's own
+        // author rather than the quiz's creator, so this matches existing behavior.
+        $question = Question::where('question_id', $questionId)->firstOrFail();
 
         $data = $request->validate([
             'material_id'        => 'nullable|integer|exists:learning_materials,material_id',

@@ -181,27 +181,25 @@ function QuestionRow({
             </div>
             <p className="text-sm font-semibold text-foreground leading-relaxed"><MathText text={question.question_text} /></p>
           </div>
-          {isOwn && (
-            <div className="flex items-center gap-1.5 flex-shrink-0">
-              <Button
-                variant="outline" size="sm"
-                onClick={() => { setExpanded(!expanded); setError(null) }}
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Add
-                {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-              </Button>
-              <Button
-                variant="ghost" size="sm"
-                className="text-destructive hover:text-destructive h-8 w-8 p-0"
-                title="Dismiss from this list: reappears if a student answers it wrong again"
-                onClick={handleDismiss}
-                disabled={dismissing}
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </Button>
-            </div>
-          )}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <Button
+              variant="outline" size="sm"
+              onClick={() => { setExpanded(!expanded); setError(null) }}
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Add
+              {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            </Button>
+            <Button
+              variant="ghost" size="sm"
+              className="text-destructive hover:text-destructive h-8 w-8 p-0"
+              title="Dismiss from this list: reappears if a student answers it wrong again"
+              onClick={handleDismiss}
+              disabled={dismissing}
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
+          </div>
         </div>
 
         {/* Answer options */}
@@ -453,7 +451,7 @@ export function FlaggedQuestionsPanel() {
           <p className="text-muted-foreground text-sm mt-1">
             {scope === 'own'
               ? "Questions your students answered incorrectly. Write an explanation or upload a PDF, and it will appear in their dashboard."
-              : "Flagged questions across every lecturer's quizzes, read-only. Only the quiz's creator can add remediation or dismiss it."}
+              : "Flagged questions across every lecturer's quizzes. You can add your own feedback or dismiss any of them from your view."}
           </p>
         </div>
         <div className="flex gap-1 rounded-lg bg-muted/50 p-1 flex-shrink-0">
