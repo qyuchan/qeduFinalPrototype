@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import {
   Sparkles, RefreshCw, BookOpen, ArrowRight, GraduationCap,
-  ExternalLink, Paperclip, Users, Brain, MessageSquare,
+  ExternalLink, Paperclip, Brain, MessageSquare,
 } from "lucide-react"
 import { AttemptDetailDialog } from "@/components/attempt-detail-dialog"
 
@@ -22,20 +22,6 @@ const SUBTOPIC_NAMES: Record<string, string> = {
   "2.3": "Elementary Row Operations",  "2.4": "Gaussian & Gauss-Jordan Elimination",
   "3.1": "Determinant Formulas",       "3.2": "Cofactor Expansion",
   "3.3": "Elementary Operations Method","3.4": "Applications of Determinants",
-}
-
-const algoLabel: Record<string, string> = {
-  cold_start:    'For You',
-  content_based: 'Content-Based',
-  collaborative: 'Collaborative',
-  hybrid:        'Hybrid',
-}
-
-const algoDescription: Record<string, string> = {
-  cold_start:    'Based on your topic level',
-  content_based: 'Based on what you studied',
-  collaborative: 'Based on similar students',
-  hybrid:        'Combined recommendation',
 }
 
 function SectionHeader({ icon, title, subtitle }: { icon: React.ReactNode; title: string; subtitle: string }) {
@@ -346,11 +332,9 @@ export function RecommendationsTab({ onNavigateToSubtopic }: RecommendationsTabP
 
   const navRecs         = recs.filter(r => r.recommendation_type === 'course_navigation')
   const cbfRecs         = recs.filter(r => r.recommendation_type !== 'course_navigation' && r.algorithm_used === 'content_based')
-  const cfRecs          = recs.filter(r => r.recommendation_type !== 'course_navigation' && r.algorithm_used === 'collaborative')
   const otherRecs       = recs.filter(r =>
     r.recommendation_type !== 'course_navigation' &&
-    r.algorithm_used !== 'content_based' &&
-    r.algorithm_used !== 'collaborative'
+    r.algorithm_used !== 'content_based'
   )
   const isEmpty = recs.length === 0 && remediations.length === 0 && reviews.length === 0
 
@@ -467,28 +451,6 @@ export function RecommendationsTab({ onNavigateToSubtopic }: RecommendationsTabP
               />
               <div className="space-y-3">
                 {cbfRecs.map(rec => (
-                  <AlgoRecCard
-                    key={rec.recommendation_id}
-                    rec={rec}
-                    onAccept={() => handleAccept(rec.recommendation_id)}
-                    onDismiss={() => handleDismiss(rec.recommendation_id)}
-                    onView={() => handleView(rec.material_id)}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* CF recommendations */}
-          {cfRecs.length > 0 && (
-            <section>
-              <SectionHeader
-                icon={<Users className="w-5 h-5" />}
-                title="Students Like You Also Studied"
-                subtitle="Based on what students with similar performance patterns found helpful (collaborative filtering)"
-              />
-              <div className="space-y-3">
-                {cfRecs.map(rec => (
                   <AlgoRecCard
                     key={rec.recommendation_id}
                     rec={rec}

@@ -164,7 +164,6 @@ export function RecommendationsSidebar({ onNavigateToSubtopic }: Recommendations
   const algoLabel: Record<string, string> = {
     cold_start:    'For You',
     content_based: 'Related',
-    collaborative: 'Students Like You',
     hybrid:        'Recommended',
   }
 
