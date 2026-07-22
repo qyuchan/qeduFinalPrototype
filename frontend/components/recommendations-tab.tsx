@@ -439,13 +439,13 @@ export function RecommendationsTab({ onNavigateToSubtopic }: RecommendationsTabP
             </section>
           )}
 
-          {/* Cold-start recommendations (CBF only — not enough peer data yet) */}
+          {/* Cold-start recommendations (CBF only, not enough peer data yet) */}
           {coldStartRecs.length > 0 && (
             <section>
               <SectionHeader
                 icon={<Compass className="w-5 h-5" />}
                 title="For You"
-                subtitle="Introductory materials for this topic — there isn't enough peer data yet to compare with other students"
+                subtitle="Introductory materials for this topic, since there isn't enough peer data yet to compare with other students"
               />
               <div className="space-y-3">
                 {coldStartRecs.map(rec => (
