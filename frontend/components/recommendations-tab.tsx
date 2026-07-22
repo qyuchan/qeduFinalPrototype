@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import {
   Sparkles, RefreshCw, BookOpen, ArrowRight, GraduationCap,
-  ExternalLink, Paperclip, Brain, MessageSquare,
+  ExternalLink, Paperclip, Brain, MessageSquare, Compass,
 } from "lucide-react"
 import { AttemptDetailDialog } from "@/components/attempt-detail-dialog"
 
@@ -332,10 +332,8 @@ export function RecommendationsTab({ onNavigateToSubtopic }: RecommendationsTabP
 
   const navRecs         = recs.filter(r => r.recommendation_type === 'course_navigation')
   const cbfRecs         = recs.filter(r => r.recommendation_type !== 'course_navigation' && r.algorithm_used === 'content_based')
-  const otherRecs       = recs.filter(r =>
-    r.recommendation_type !== 'course_navigation' &&
-    r.algorithm_used !== 'content_based'
-  )
+  const coldStartRecs   = recs.filter(r => r.recommendation_type !== 'course_navigation' && r.algorithm_used === 'cold_start')
+  const hybridRecs      = recs.filter(r => r.recommendation_type !== 'course_navigation' && r.algorithm_used === 'hybrid')
   const isEmpty = recs.length === 0 && remediations.length === 0 && reviews.length === 0
 
   return (
@@ -441,6 +439,28 @@ export function RecommendationsTab({ onNavigateToSubtopic }: RecommendationsTabP
             </section>
           )}
 
+          {/* Cold-start recommendations (CBF only — not enough peer data yet) */}
+          {coldStartRecs.length > 0 && (
+            <section>
+              <SectionHeader
+                icon={<Compass className="w-5 h-5" />}
+                title="For You"
+                subtitle="Introductory materials for this topic — there isn't enough peer data yet to compare with other students"
+              />
+              <div className="space-y-3">
+                {coldStartRecs.map(rec => (
+                  <AlgoRecCard
+                    key={rec.recommendation_id}
+                    rec={rec}
+                    onAccept={() => handleAccept(rec.recommendation_id)}
+                    onDismiss={() => handleDismiss(rec.recommendation_id)}
+                    onView={() => handleView(rec.material_id)}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
           {/* CBF recommendations */}
           {cbfRecs.length > 0 && (
             <section>
@@ -463,16 +483,16 @@ export function RecommendationsTab({ onNavigateToSubtopic }: RecommendationsTabP
             </section>
           )}
 
-          {/* Other / hybrid recs */}
-          {otherRecs.length > 0 && (
+          {/* Hybrid recs (CBF + CF blended) */}
+          {hybridRecs.length > 0 && (
             <section>
               <SectionHeader
                 icon={<Sparkles className="w-5 h-5" />}
                 title="Also Recommended"
-                subtitle="Additional suggestions based on your learning profile"
+                subtitle="Based on students with similar learning patterns"
               />
               <div className="space-y-3">
-                {otherRecs.map(rec => (
+                {hybridRecs.map(rec => (
                   <AlgoRecCard
                     key={rec.recommendation_id}
                     rec={rec}
