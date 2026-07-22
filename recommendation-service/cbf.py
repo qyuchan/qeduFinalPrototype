@@ -6,8 +6,8 @@ import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-# Materials rarely change — cache per topic_id for 5 minutes
-_materials_cache: dict[int, tuple[list, float]] = {}
+# Materials rarely change, so cache per topic-id combination for 5 minutes
+_materials_cache: dict[tuple[int, ...], tuple[list, float]] = {}
 _MATERIALS_TTL = 300.0
 
 
@@ -16,7 +16,7 @@ class ContentBasedFilter:
         self.pool = pool
 
     async def score(self, user_id: int, topic_id: int, weak_subtopics: list[str] = []) -> list[dict]:
-        # Fetch weak tags and materials in parallel
+        # Fetch weak tags and materials (current topic + its prerequisite, if any) in parallel
         weak_tags, materials = await asyncio.gather(
             self._fetch_weak_tags(user_id, topic_id),
             self._fetch_materials(topic_id, weak_subtopics),
@@ -27,11 +27,6 @@ class ContentBasedFilter:
 
         texts     = [m["text_features"] for m in materials]
         query_str = " ".join(weak_tags) if weak_tags else texts[0]
-        reason    = (
-            f"Covers weak subtopics: {', '.join(weak_tags[:3])}"
-            if weak_tags else
-            "Introductory material for topic"
-        )
 
         vectorizer = TfidfVectorizer(stop_words="english", max_features=500)
         try:
@@ -41,12 +36,19 @@ class ContentBasedFilter:
 
         sims = cosine_similarity(tfidf[0:1], tfidf[1:]).flatten()
 
+        def reason_for(material: asyncpg.Record) -> str:
+            if material["topic_id"] != topic_id:
+                return "Foundational material from a prerequisite topic"
+            if weak_tags:
+                return f"Covers weak subtopics: {', '.join(weak_tags[:3])}"
+            return "Introductory material for topic"
+
         return [
             {
                 "material_id": materials[i]["material_id"],
                 "subtopic_id": materials[i]["subtopic_id"],
                 "score":       float(sims[i]),
-                "reason":      reason,
+                "reason":      reason_for(materials[i]),
             }
             for i in range(len(materials))
         ]
@@ -71,37 +73,47 @@ class ContentBasedFilter:
         )
         return [r["topic_tag"] for r in rows]
 
+    async def _fetch_prerequisite_topic_ids(self, topic_id: int) -> list[int]:
+        required = await self.pool.fetchval(
+            "SELECT required_topic_id FROM topic_prerequisites WHERE topic_id = $1 LIMIT 1",
+            topic_id,
+        )
+        return [topic_id, required] if required else [topic_id]
+
     async def _fetch_materials(self, topic_id: int, subtopics: list[str] = []) -> list[asyncpg.Record]:
+        topic_ids = await self._fetch_prerequisite_topic_ids(topic_id)
+
         if subtopics:
             rows = await self.pool.fetch(
                 """
-                SELECT material_id, subtopic_id,
+                SELECT material_id, subtopic_id, topic_id,
                        COALESCE(tags, '') || ' ' || COALESCE(keywords, '') AS text_features
                 FROM learning_materials
-                WHERE topic_id    = $1
+                WHERE topic_id    = ANY($1)
                   AND subtopic_id = ANY($2)
                   AND is_active   = TRUE
                 """,
-                topic_id, subtopics,
+                topic_ids, subtopics,
             )
             if rows:
                 return rows
             # Fall through to full topic fetch (with cache)
 
         now = time.monotonic()
-        cached = _materials_cache.get(topic_id)
+        cache_key = tuple(topic_ids)
+        cached = _materials_cache.get(cache_key)
         if cached and now < cached[1]:
             return cached[0]
 
         rows = await self.pool.fetch(
             """
-            SELECT material_id, subtopic_id,
+            SELECT material_id, subtopic_id, topic_id,
                    COALESCE(tags, '') || ' ' || COALESCE(keywords, '') AS text_features
             FROM learning_materials
-            WHERE topic_id = $1
+            WHERE topic_id = ANY($1)
               AND is_active = TRUE
             """,
-            topic_id,
+            topic_ids,
         )
-        _materials_cache[topic_id] = (list(rows), now + _MATERIALS_TTL)
+        _materials_cache[cache_key] = (list(rows), now + _MATERIALS_TTL)
         return rows

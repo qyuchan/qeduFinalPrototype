@@ -10,6 +10,7 @@ use App\Models\Quiz;
 use App\Models\Topic;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class AlmsarsaSeeder extends Seeder
@@ -89,6 +90,18 @@ class AlmsarsaSeeder extends Seeder
         }
 
         [$matrices, $determinants, $systems] = $topics;
+
+        // ── 3b. Topic prerequisites (chain matches sequence_order above) ──────
+        // Lets CBF pull in the prerequisite topic's materials alongside the
+        // current one when a student is struggling, not just same-topic content.
+        foreach ([
+            [$determinants->topic_id, $matrices->topic_id],
+            [$systems->topic_id,      $determinants->topic_id],
+        ] as [$topicId, $requiredTopicId]) {
+            DB::table('topic_prerequisites')->updateOrInsert(
+                ['topic_id' => $topicId, 'required_topic_id' => $requiredTopicId]
+            );
+        }
 
         // ── 4. Quizzes + Questions (10 practice sets per topic) ───────────────
         // Matrices
