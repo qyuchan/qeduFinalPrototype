@@ -52,6 +52,7 @@ function QuestionFeedbackInline({ question, topicId }: { question: WrongAnswer; 
             content_type:     'pdf',
             difficulty_level: question.difficulty_level === 'hard' ? 'advanced'
                              : question.difficulty_level === 'medium' ? 'intermediate' : 'basic',
+            is_remedial:      true,
           },
           pdfFile!,
         )
